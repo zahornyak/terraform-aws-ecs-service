@@ -200,3 +200,9 @@ variable "alb_arn" {
   description = "load balancer arn"
   type        = string
 }
+
+variable "assign_public_ip" {
+  default     = false
+  type        = bool
+  description = "assign_public_ip set true if you are using public ips"
+}

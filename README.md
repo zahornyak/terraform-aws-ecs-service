@@ -74,6 +74,7 @@ module "ecs_service" {
 |------|-------------|------|---------|:--------:|
 | <a name="input_alb_arn"></a> [alb\_arn](#input\_alb\_arn) | load balancer arn | `string` | n/a | yes |
 | <a name="input_alb_listener_arn"></a> [alb\_listener\_arn](#input\_alb\_listener\_arn) | Listener arn for load balancer connection | `string` | n/a | yes |
+| <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | assign\_public\_ip set true if you are using public ips | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definition"></a> [container\_definition](#input\_container\_definition) | your custom container definition | `map(any)` | `{}` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |

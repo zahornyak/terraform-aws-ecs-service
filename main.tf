@@ -63,13 +63,14 @@ resource "aws_ecs_service" "service" {
   launch_type            = var.launch_type
 
   network_configuration {
-    subnets         = var.service_subnets
-    security_groups = [module.service_container_sg.security_group_id]
+    subnets          = var.service_subnets
+    assign_public_ip = var.assign_public_ip
+    security_groups  = [module.service_container_sg.security_group_id]
   }
 
   dynamic "load_balancer" {
     # if listener_arn is defined - :create load balancer association block
-    for_each = var.alb_listener_arn != null ? [] : [1]
+    for_each = var.alb_listener_arn != null ? [1] : []
     content {
       container_name   = var.service_name
       container_port   = var.service_port
