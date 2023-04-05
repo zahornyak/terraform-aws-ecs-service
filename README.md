@@ -1,3 +1,34 @@
+# Terraform AWS ECS service stack cretion
+This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
+
+
+## Example
+
+```hcl
+module "ecs_service" {
+  source  = "zahornyak/ecs-service/aws"
+  version = "0.0.1"
+
+  region           = "eu-central-1"
+  environment      = "production"
+  vpc_id           = "vpc-080fd3cfeOa077792"
+  service_subnets  = ["subnet-0c264c0a8557154cb","subnet-09e07c7e06d8b22e2","subnet-005217194adee6cdf"]
+  cluster_name     = "production"
+  route_53_zone_id = "Z0100384224HFJCZFL7A2"
+  alb_arn          = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:loadbalancer/app/production-alb/46633856495fd4b2"
+  alb_listener_arn = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:listener/app/production-alb/46633856495fd4b2/83d8743f8c9f02db"
+
+  service_domain    = "api"
+  service_name      = "backend"
+  min_service_tasks = 1
+
+  service_image_tag = "nginx:latest"
+
+  service_memory = 256
+  service_cpu    = 256
+}
+```
+
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
 
