@@ -57,7 +57,7 @@ resource "aws_ecs_task_definition" "service" {
 resource "aws_ecs_service" "service" {
   name                   = "${var.environment}_${var.service_name}_service"
   task_definition        = aws_ecs_task_definition.service.arn
-  desired_count          = var.desired_count ? var.desired_count : var.min_service_tasks
+  desired_count          = var.desired_count != null ? var.desired_count : var.min_service_tasks
   cluster                = var.cluster_name
   enable_execute_command = true
   launch_type            = var.launch_type
@@ -95,7 +95,7 @@ resource "aws_ecs_service" "service" {
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
   # thats only if you have alb connection on service
-  health_check_grace_period_seconds = var.alb_listener_arn ? var.health_check_grace_period_seconds : null
+  health_check_grace_period_seconds = var.alb_listener_arn != null ? var.health_check_grace_period_seconds : null
 
 }
 
