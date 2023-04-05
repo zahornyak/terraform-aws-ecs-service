@@ -119,5 +119,4 @@ module "ecs_service" {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
