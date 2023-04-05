@@ -11,7 +11,7 @@ module "records_alb" {
       name = var.service_domain
       type = "A"
       alias = {
-        name    = data.aws_alb.this.name
+        name    = data.aws_alb.this.dns_name
         zone_id = data.aws_alb.this.zone_id
       }
     }

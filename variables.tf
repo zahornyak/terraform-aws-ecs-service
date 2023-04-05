@@ -206,3 +206,9 @@ variable "assign_public_ip" {
   type        = bool
   description = "assign_public_ip set true if you are using public ips"
 }
+
+variable "create_ssl" {
+  default     = true
+  type        = bool
+  description = "creates ssl certificate for your service and attach it to alb listener"
+}

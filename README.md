@@ -7,25 +7,28 @@ This module is for whole ECS service stack creation: service, task definition, c
 ```hcl
 module "ecs_service" {
   source  = "zahornyak/ecs-service/aws"
-  version = "0.0.1"
+  version = "0.0.3"
 
   region           = "eu-central-1"
-  environment      = "production"
-  vpc_id           = "vpc-080fd3cfeOa077792"
-  service_subnets  = ["subnet-0c264c0a8557154cb","subnet-09e07c7e06d8b22e2","subnet-005217194adee6cdf"]
-  cluster_name     = "production"
-  route_53_zone_id = "Z0100384224HFJCZFL7A2"
-  alb_arn          = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:loadbalancer/app/production-alb/46633856495fd4b2"
-  alb_listener_arn = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:listener/app/production-alb/46633856495fd4b2/83d8743f8c9f02db"
+  environment      = "test"
+  vpc_id           = "vpc-080fd3cfe0a555592"
+  service_subnets  = ["subnet-0c264c0a9997154cb","subnet-09e07c7e0999b22e2"]
+  # assign_public_ip = true # if you are using public subnets
+  cluster_name     = "test-cluster"
+  route_53_zone_id = "Z01006876543TS0ZFL7A2"
+  alb_arn          = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:loadbalancer/app/plugin-development-alb/4601234567890fd4b2"
+  alb_listener_arn = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:listener/app/plugin-development-alb/4601234567890fd4b2/8301234567802db"
+  create_ssl = true # requests ssl for service and attach it to listener rule
 
-  service_domain    = "api"
+  service_domain    = "api-test"
   service_name      = "backend"
   min_service_tasks = 1
 
   service_image_tag = "nginx:latest"
 
-  service_memory = 256
+  service_memory = 512
   service_cpu    = 256
+  service_port = 80
 }
 ```
 
@@ -47,6 +50,7 @@ module "ecs_service" {
 
 | Name | Source | Version |
 |------|--------|---------|
+| <a name="module_acm"></a> [acm](#module\_acm) | terraform-aws-modules/acm/aws | ~> 3.3.0 |
 | <a name="module_ecs_task_execution_role"></a> [ecs\_task\_execution\_role](#module\_ecs\_task\_execution\_role) | terraform-aws-modules/iam/aws//modules/iam-assumable-role | ~> 4.4 |
 | <a name="module_ecs_task_policy"></a> [ecs\_task\_policy](#module\_ecs\_task\_policy) | terraform-aws-modules/iam/aws//modules/iam-policy | ~> 4.4 |
 | <a name="module_ecs_task_role"></a> [ecs\_task\_role](#module\_ecs\_task\_role) | terraform-aws-modules/iam/aws//modules/iam-assumable-role | ~> 4.4 |
@@ -61,6 +65,7 @@ module "ecs_service" {
 | [aws_cloudwatch_log_group.service_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_ecs_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
+| [aws_lb_listener_certificate.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
 | [aws_alb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/alb) | data source |
@@ -77,6 +82,7 @@ module "ecs_service" {
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | assign\_public\_ip set true if you are using public ips | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definition"></a> [container\_definition](#input\_container\_definition) | your custom container definition | `map(any)` | `{}` | no |
+| <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | creates ssl certificate for your service and attach it to alb listener | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
 | <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | deregistration\_delay for target group | `number` | `5` | no |
