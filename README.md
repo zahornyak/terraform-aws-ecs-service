@@ -1,4 +1,6 @@
 # Terraform AWS ECS service stack creation
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/zahornyak/terraform-aws-ecs-service)
+
 This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
 
 
@@ -115,5 +117,7 @@ module "ecs_service" {
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
