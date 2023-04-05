@@ -18,7 +18,7 @@ module "ecs_service" {
   route_53_zone_id = "Z01006876543TS0ZFL7A2"
   alb_arn          = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:loadbalancer/app/plugin-development-alb/4601234567890fd4b2"
   alb_listener_arn = "arn:aws:elasticloadbalancing:eu-central-1:01234567890:listener/app/plugin-development-alb/4601234567890fd4b2/8301234567802db"
-  create_ssl = true # requests ssl for service and attach it to listener rule
+  create_ssl       = true # requests ssl for service and attach it to listener rule
 
   service_domain    = "api-test"
   service_name      = "backend"
@@ -28,7 +28,7 @@ module "ecs_service" {
 
   service_memory = 512
   service_cpu    = 256
-  service_port = 80
+  service_port   = 80
 }
 ```
 
