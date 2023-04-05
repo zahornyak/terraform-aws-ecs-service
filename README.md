@@ -1,4 +1,4 @@
-# Terraform AWS ECS service stack cretion
+# Terraform AWS ECS service stack creation
 This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
 
 
