@@ -69,7 +69,7 @@ resource "aws_ecs_service" "service" {
 
   dynamic "load_balancer" {
     # if listener_arn is defined - :create load balancer association block
-    for_each = var.alb_listener_arn ? [] : [1]
+    for_each = var.alb_listener_arn != null ? [] : [1]
     content {
       container_name   = var.service_name
       container_port   = var.service_port

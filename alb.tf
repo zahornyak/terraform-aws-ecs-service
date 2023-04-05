@@ -1,6 +1,6 @@
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  count = var.alb_listener_arn ? 1 : 0
+  count = var.alb_listener_arn != null ? 1 : 0
 
   name                 = "alb-${var.environment}-${replace(var.service_name, "_", "")}"
   port                 = var.service_port
@@ -21,7 +21,7 @@ resource "aws_lb_target_group" "service" {
 
 resource "aws_lb_listener_rule" "service" {
   # if create_envoy is false - create target group
-  count = var.alb_listener_arn ? 1 : 0
+  count = var.alb_listener_arn != null ? 1 : 0
 
   listener_arn = var.alb_listener_arn
 
