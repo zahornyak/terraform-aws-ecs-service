@@ -7,7 +7,7 @@ This module is for whole ECS service stack creation: service, task definition, c
 ```hcl
 module "ecs_service" {
   source  = "zahornyak/ecs-service/aws"
-  version = "0.0.3"
+  version = "0.0.4"
 
   region           = "eu-central-1"
   environment      = "test"
