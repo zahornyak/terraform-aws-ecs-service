@@ -105,4 +105,195 @@ resource "aws_cloudwatch_log_group" "service_logs" {
   retention_in_days = 60
 }
 
+module "acm" {
+  source  = "terraform-aws-modules/acm/aws"
+  version = "~> 3.3.0"
+  count   = var.create_ssl ? 1 : 0
+
+  domain_name = "${var.service_domain}.${data.aws_route53_zone.this.name}"
+  zone_id     = data.aws_route53_zone.this.zone_id
+
+  wait_for_validation = true
+
+}
+
+resource "aws_lb_listener_certificate" "this" {
+  count = var.create_ssl ? 1 : 0
+
+  listener_arn    = var.alb_listener_arn
+  certificate_arn = module.acm[0].acm_certificate_arn
+}
+
+resource "aws_lb_target_group" "service" {
+  # if listener arn defined - create target group
+  count = var.alb_listener_arn != null ? 1 : 0
+
+  name                 = "alb-${var.environment}-${replace(var.service_name, "_", "")}"
+  port                 = var.service_port
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = data.aws_vpc.this.id
+  deregistration_delay = var.deregistration_delay
+  health_check {
+    enabled             = try(var.health_check.enabled, null)
+    interval            = try(var.health_check.interval, null)
+    path                = try(var.health_check.path, null)
+    timeout             = try(var.health_check.timeout, null)
+    healthy_threshold   = try(var.health_check.healthy_threshold, null)
+    unhealthy_threshold = try(var.health_check.unhealthy_threshold, null)
+    matcher             = try(var.health_check.matcher, null)
+  }
+}
+
+resource "aws_lb_listener_rule" "service" {
+  # if create_envoy is false - create target group
+  count = var.alb_listener_arn != null ? 1 : 0
+
+  listener_arn = var.alb_listener_arn
+
+  action {
+    type = "forward"
+    # if custom target group is not defined - route to service target group
+    target_group_arn = var.target_group_arn != null ? var.target_group_arn : aws_lb_target_group.service[0].arn
+  }
+
+  condition {
+    host_header {
+      values = ["${var.service_domain}.${data.aws_route53_zone.this.name}"]
+      #      values = [var.listener_host_header]
+    }
+  }
+  depends_on = [aws_lb_target_group.service[0]]
+}
+
+
+data "aws_vpc" "this" {
+  id = var.vpc_id
+}
+
+data "aws_route53_zone" "this" {
+  zone_id = var.route_53_zone_id
+}
+
+data "aws_alb" "this" {
+  arn = var.alb_arn
+}
+
+
+module "ecs_task_execution_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+  version = "~> 4.4"
+
+  trusted_role_services = [
+    "ecs-tasks.amazonaws.com"
+  ]
+
+  create_role = true
+
+  role_name         = "${var.environment}-${var.service_name}EcsTaskExecutionRole"
+  role_requires_mfa = false
+
+
+  custom_role_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  ]
+}
+
+module "ecs_task_policy" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
+  version = "~> 4.4"
+
+  name = "${var.environment}-${var.service_name}EcsTaskPolicy"
+
+  policy = data.aws_iam_policy_document.ecs_task_policy.json
+}
+
+
+data "aws_iam_policy_document" "ecs_task_policy" {
+  statement {
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel"
+    ]
+    resources = ["*"]
+  }
+  #  statement {
+  #    actions = [
+  #      "appmesh:*"
+  #    ]
+  #    resources = ["*"]
+  #  }
+}
+
+
+module "ecs_task_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+  version = "~> 4.4"
+
+  trusted_role_services = [
+    "ecs-tasks.amazonaws.com"
+  ]
+
+  create_role = true
+
+  role_name         = "${var.environment}-${var.service_name}EcsTaskRole"
+  role_requires_mfa = false
+
+
+  custom_role_policy_arns = concat([
+    module.ecs_task_policy.arn,
+    "arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess"
+  ], var.task_role_policy_arns)
+
+}
+
+
+module "records_alb" {
+  source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
+  version = "~> 2.3"
+
+  count = var.alb_listener_arn != null ? 1 : 0
+
+  zone_id = data.aws_route53_zone.this.id
+
+  records = [
+    {
+      name = var.service_domain
+      type = "A"
+      alias = {
+        name    = data.aws_alb.this.dns_name
+        zone_id = data.aws_alb.this.zone_id
+      }
+    }
+  ]
+
+}
+
+
+module "service_container_sg" {
+  source  = "registry.terraform.io/terraform-aws-modules/security-group/aws"
+  version = "~> 4.3"
+
+  name        = "${var.environment}-service-container-sg"
+  description = "Security group for ${var.environment} backend Container"
+  vpc_id      = var.vpc_id
+
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = var.service_port
+      to_port     = var.service_port
+      protocol    = "tcp"
+      description = "${var.service_name} service port"
+      cidr_blocks = data.aws_vpc.this.cidr_block
+  }]
+
+  egress_rules       = ["all-all"]
+  egress_cidr_blocks = ["0.0.0.0/0"]
+
+
+}
+
+
 
