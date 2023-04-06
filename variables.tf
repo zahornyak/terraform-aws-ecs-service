@@ -24,7 +24,7 @@ variable "region" {
 }
 
 variable "docker_healthcheck" {
-  description = "Docker_healthcheck for container."
+  description = "Docker healthcheck for container."
   type = object({
     command     = list(string)
     retries     = number
@@ -52,7 +52,7 @@ variable "port_mapping" {
 }
 
 variable "environment_vars" {
-  description = "Environment variables for container"
+  description = "Environment variables for container."
   type = list(object({
     name  = string
     value = string
@@ -61,7 +61,7 @@ variable "environment_vars" {
 }
 
 variable "secrets" {
-  description = "Secrets for container"
+  description = "Secrets for container."
   type = list(object({
     name      = string
     valueFrom = string
@@ -70,7 +70,7 @@ variable "secrets" {
 }
 
 variable "log_configuration" {
-  description = "Log configuration"
+  description = "Log configuration."
   type        = map(any)
   default     = null
 }
@@ -87,7 +87,7 @@ variable "environment_files" {
 variable "container_definition" {
   type        = map(any)
   default     = {}
-  description = "your custom container definition"
+  description = "Your custom container definition."
 }
 
 variable "requires_compatibilities" {
@@ -97,7 +97,7 @@ variable "requires_compatibilities" {
 }
 
 variable "network_mode" {
-  description = "Network_mode for task."
+  description = "Network mode for task. For example 'awsvpc' or 'bridge' etc."
   default     = "awsvpc"
   type        = string
 }
@@ -114,7 +114,7 @@ variable "desired_count" {
 }
 
 variable "min_service_tasks" {
-  description = "min_service_tasks"
+  description = "Minimum service tasks."
   type        = number
 }
 
@@ -124,13 +124,13 @@ variable "cluster_name" {
 }
 
 variable "launch_type" {
-  description = "launch_type for service"
+  description = "Launch type for service: 'FARGATE', 'EC2' etc."
   type        = string
   default     = "FARGATE"
 }
 
 variable "service_subnets" {
-  description = "subnets for service"
+  description = "Subnets for service"
   type        = list(string)
 }
 
@@ -158,57 +158,57 @@ variable "health_check_grace_period_seconds" {
 }
 
 variable "health_check" {
-  description = "health_check"
+  description = "Custom healthcheck for target group."
   type        = any
   default     = null
 }
 
 variable "vpc_id" {
-  description = "vpc_id"
+  description = "VPC id."
   type        = string
 }
 
 variable "deregistration_delay" {
   default     = 5
   type        = number
-  description = "deregistration_delay for target group"
+  description = "Deregistration delay for target group."
 }
 
 variable "target_group_arn" {
   default     = null
-  description = "custom target group arn"
+  description = "Custom target group arn."
   type        = string
 }
 
 variable "service_domain" {
-  description = "domain of your service. For example in help.google.com your service domain is 'help'"
+  description = "Domain of your service. For example in help.google.com your service domain is 'help'."
   type        = string
 }
 
 variable "route_53_zone_id" {
-  description = "route 53 zone id"
+  description = "Route 53 zone id."
   type        = string
 }
 
 variable "task_role_policy_arns" {
-  description = "Policies to attach to task role of ECS container"
+  description = "Policies to attach to task role of ECS container."
   type        = list(string)
   default     = []
 }
 
 variable "alb_arn" {
-  description = "load balancer arn"
+  description = "Load balancer arn."
   type        = string
 }
 
 variable "assign_public_ip" {
   default     = false
   type        = bool
-  description = "assign_public_ip set true if you are using public ips"
+  description = "Assign_public_ip set true if you are using public subnets."
 }
 
 variable "create_ssl" {
   default     = true
   type        = bool
-  description = "creates ssl certificate for your service and attach it to alb listener"
+  description = "Creates ssl certificate for your service and attach it to alb listener."
 }

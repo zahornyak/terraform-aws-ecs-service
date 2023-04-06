@@ -126,7 +126,7 @@ resource "aws_lb_listener_certificate" "this" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  count = var.alb_listener_arn != null ? 1 : 0
+  count = var.alb_listener_arn != null || var.target_group_arn == null ? 1 : 0
 
   name                 = "alb-${var.environment}-${replace(var.service_name, "_", "")}"
   port                 = var.service_port

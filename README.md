@@ -79,44 +79,45 @@ module "ecs_service" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_alb_arn"></a> [alb\_arn](#input\_alb\_arn) | load balancer arn | `string` | n/a | yes |
+| <a name="input_alb_arn"></a> [alb\_arn](#input\_alb\_arn) | Load balancer arn. | `string` | n/a | yes |
 | <a name="input_alb_listener_arn"></a> [alb\_listener\_arn](#input\_alb\_listener\_arn) | Listener arn for load balancer connection | `string` | n/a | yes |
-| <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | assign\_public\_ip set true if you are using public ips | `bool` | `false` | no |
+| <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
-| <a name="input_container_definition"></a> [container\_definition](#input\_container\_definition) | your custom container definition | `map(any)` | `{}` | no |
-| <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | creates ssl certificate for your service and attach it to alb listener | `bool` | `true` | no |
+| <a name="input_container_definition"></a> [container\_definition](#input\_container\_definition) | Your custom container definition. | `map(any)` | `{}` | no |
+| <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | Creates ssl certificate for your service and attach it to alb listener. | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
-| <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | deregistration\_delay for target group | `number` | `5` | no |
+| <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Deregistration delay for target group. | `number` | `5` | no |
 | <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired count for service. | `number` | `null` | no |
-| <a name="input_docker_healthcheck"></a> [docker\_healthcheck](#input\_docker\_healthcheck) | Docker\_healthcheck for container. | <pre>object({<br>    command     = list(string)<br>    retries     = number<br>    timeout     = number<br>    interval    = number<br>    startPeriod = number<br>  })</pre> | `null` | no |
+| <a name="input_docker_healthcheck"></a> [docker\_healthcheck](#input\_docker\_healthcheck) | Docker healthcheck for container. | <pre>object({<br>    command     = list(string)<br>    retries     = number<br>    timeout     = number<br>    interval    = number<br>    startPeriod = number<br>  })</pre> | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
 | <a name="input_environment_files"></a> [environment\_files](#input\_environment\_files) | One or more files containing the environment variables to pass to the container. This maps to the --env-file option to docker run. The file must be hosted in Amazon S3. This option is only available to tasks using the EC2 launch type. This is a list of maps | <pre>list(object({<br>    value = string<br>    type  = string<br>  }))</pre> | `[]` | no |
-| <a name="input_environment_vars"></a> [environment\_vars](#input\_environment\_vars) | Environment variables for container | <pre>list(object({<br>    name  = string<br>    value = string<br>  }))</pre> | `[]` | no |
-| <a name="input_health_check"></a> [health\_check](#input\_health\_check) | health\_check | `any` | `null` | no |
+| <a name="input_environment_vars"></a> [environment\_vars](#input\_environment\_vars) | Environment variables for container. | <pre>list(object({<br>    name  = string<br>    value = string<br>  }))</pre> | `[]` | no |
+| <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Custom healthcheck for target group. | `any` | `null` | no |
 | <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `30` | no |
-| <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | launch\_type for service | `string` | `"FARGATE"` | no |
-| <a name="input_log_configuration"></a> [log\_configuration](#input\_log\_configuration) | Log configuration | `map(any)` | `null` | no |
-| <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | min\_service\_tasks | `number` | n/a | yes |
-| <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network\_mode for task. | `string` | `"awsvpc"` | no |
+| <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
+| <a name="input_log_configuration"></a> [log\_configuration](#input\_log\_configuration) | Log configuration. | `map(any)` | `null` | no |
+| <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | n/a | yes |
+| <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
 | <a name="input_port_mapping"></a> [port\_mapping](#input\_port\_mapping) | Custom port mapping for service. | <pre>list(object({<br>    containerPort = number<br>    hostPort      = number<br>    protocol      = string<br>  }))</pre> | `null` | no |
 | <a name="input_region"></a> [region](#input\_region) | Your region. | `string` | n/a | yes |
 | <a name="input_requires_compatibilities"></a> [requires\_compatibilities](#input\_requires\_compatibilities) | Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE\_SPOT', 'EC2' etc. | `list(string)` | <pre>[<br>  "FARGATE"<br>]</pre> | no |
-| <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | route 53 zone id | `string` | n/a | yes |
-| <a name="input_secrets"></a> [secrets](#input\_secrets) | Secrets for container | <pre>list(object({<br>    name      = string<br>    valueFrom = string<br>  }))</pre> | `[]` | no |
+| <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | n/a | yes |
+| <a name="input_secrets"></a> [secrets](#input\_secrets) | Secrets for container. | <pre>list(object({<br>    name      = string<br>    valueFrom = string<br>  }))</pre> | `[]` | no |
 | <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
-| <a name="input_service_domain"></a> [service\_domain](#input\_service\_domain) | domain of your service. For example in help.google.com your service domain is 'help' | `string` | n/a | yes |
+| <a name="input_service_domain"></a> [service\_domain](#input\_service\_domain) | Domain of your service. For example in help.google.com your service domain is 'help'. | `string` | n/a | yes |
 | <a name="input_service_image_tag"></a> [service\_image\_tag](#input\_service\_image\_tag) | Docker image for service. | `string` | n/a | yes |
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | Name of the service. | `string` | n/a | yes |
 | <a name="input_service_port"></a> [service\_port](#input\_service\_port) | Port for your service. | `number` | `null` | no |
-| <a name="input_service_subnets"></a> [service\_subnets](#input\_service\_subnets) | subnets for service | `list(string)` | n/a | yes |
-| <a name="input_target_group_arn"></a> [target\_group\_arn](#input\_target\_group\_arn) | custom target group arn | `string` | `null` | no |
-| <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Policies to attach to task role of ECS container | `list(string)` | `[]` | no |
-| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | vpc\_id | `string` | n/a | yes |
+| <a name="input_service_subnets"></a> [service\_subnets](#input\_service\_subnets) | Subnets for service | `list(string)` | n/a | yes |
+| <a name="input_target_group_arn"></a> [target\_group\_arn](#input\_target\_group\_arn) | Custom target group arn. | `string` | `null` | no |
+| <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Policies to attach to task role of ECS container. | `list(string)` | `[]` | no |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id. | `string` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
+| <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
