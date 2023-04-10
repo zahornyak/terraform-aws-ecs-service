@@ -1,6 +1,5 @@
 module "ecs_service" {
-  source  = "zahornyak/ecs-service/aws"
-  version = "0.0.4"
+  source = "zahornyak/ecs-service/aws"
 
   region          = "eu-central-1"
   environment     = "production"
