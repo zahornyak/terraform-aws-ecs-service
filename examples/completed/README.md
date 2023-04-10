@@ -12,7 +12,7 @@ module "ecs_service" {
   route_53_zone_id = aws_route53_zone.primary.zone_id
   alb_arn          = aws_lb.main.arn
   alb_listener_arn = aws_lb_listener.main.arn
-  create_ssl       = true # requests ssl for service and attach it to listener rule
+  create_ssl       = true # requests ssl for service and attach it to listener
 
   service_domain    = "api"
   service_name      = "backend"
