@@ -108,7 +108,7 @@ resource "aws_cloudwatch_log_group" "service_logs" {
 module "acm" {
   source   = "terraform-aws-modules/acm/aws"
   version  = "~> 3.3.0"
-  for_each = var.create_ssl ? 1 : 0
+  for_each = var.create_ssl ? [1] : [0]
 
   domain_name = "${var.service_domain}.${data.aws_route53_zone.this.name}"
   zone_id     = data.aws_route53_zone.this.zone_id
@@ -118,7 +118,7 @@ module "acm" {
 }
 
 resource "aws_lb_listener_certificate" "this" {
-  count = var.create_ssl ? 1 : 0
+  for_each = var.create_ssl ? [1] : [0]
 
   listener_arn    = var.alb_listener_arn
   certificate_arn = module.acm[0].acm_certificate_arn
@@ -126,7 +126,7 @@ resource "aws_lb_listener_certificate" "this" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  count = var.alb_listener_arn != null || var.target_group_arn == null ? 1 : 0
+  for_each = var.alb_listener_arn != null || var.target_group_arn == null ? [1] : [0]
 
   name                 = "alb-${var.environment}-${replace(var.service_name, "_", "")}"
   port                 = var.service_port
