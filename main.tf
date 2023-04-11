@@ -110,8 +110,9 @@ module "acm" {
   version = "~> 3.3.0"
   count   = var.create_ssl ? 1 : 0
 
-  domain_name = "${var.service_domain}.${data.aws_route53_zone.this.name}"
-  zone_id     = data.aws_route53_zone.this.zone_id
+  create_certificate = true
+  domain_name        = "${var.service_domain}.${data.aws_route53_zone.this.name}"
+  zone_id            = data.aws_route53_zone.this.zone_id
 
   wait_for_validation = true
 

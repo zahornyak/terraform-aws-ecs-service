@@ -137,6 +137,7 @@ variable "service_subnets" {
 variable "alb_listener_arn" {
   description = "Listener arn for load balancer connection"
   type        = string
+  default     = null
 }
 
 variable "deployment_maximum_percent" {
