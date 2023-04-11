@@ -106,13 +106,12 @@ resource "aws_cloudwatch_log_group" "service_logs" {
 }
 
 module "acm" {
-  source  = "terraform-aws-modules/acm/aws"
-  version = "~> 3.3.0"
-  count   = var.create_ssl ? 1 : 0
+  source   = "terraform-aws-modules/acm/aws"
+  version  = "~> 3.3.0"
+  for_each = var.create_ssl ? 1 : 0
 
-  create_certificate = true
-  domain_name        = "${var.service_domain}.${data.aws_route53_zone.this.name}"
-  zone_id            = data.aws_route53_zone.this.zone_id
+  domain_name = "${var.service_domain}.${data.aws_route53_zone.this.name}"
+  zone_id     = data.aws_route53_zone.this.zone_id
 
   wait_for_validation = true
 
@@ -148,7 +147,8 @@ resource "aws_lb_target_group" "service" {
 
 resource "aws_lb_listener_rule" "service" {
   # if create_envoy is false - create target group
-  count = var.alb_listener_arn != null ? 1 : 0
+  #  count = var.alb_listener_arn != null ? 1 : 0
+  for_each = var.alb_listener_arn != null ? 1 : 0
 
   listener_arn = var.alb_listener_arn
 
