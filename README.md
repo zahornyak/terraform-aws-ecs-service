@@ -103,6 +103,7 @@ module "ecs_service" {
 | <a name="input_requires_compatibilities"></a> [requires\_compatibilities](#input\_requires\_compatibilities) | Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE\_SPOT', 'EC2' etc. | `list(string)` | <pre>[<br>  "FARGATE"<br>]</pre> | no |
 | <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | n/a | yes |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | Secrets for container. | <pre>list(object({<br>    name      = string<br>    valueFrom = string<br>  }))</pre> | `[]` | no |
+| <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | additional security\_groups for service | `list(string)` | `[]` | no |
 | <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
 | <a name="input_service_domain"></a> [service\_domain](#input\_service\_domain) | Domain of your service. For example in help.google.com your service domain is 'help'. | `string` | n/a | yes |
 | <a name="input_service_image_tag"></a> [service\_image\_tag](#input\_service\_image\_tag) | Docker image for service. | `string` | n/a | yes |
@@ -119,4 +120,5 @@ module "ecs_service" {
 | Name | Description |
 |------|-------------|
 | <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
+| <a name="output_ecs_service_security_group_id"></a> [ecs\_service\_security\_group\_id](#output\_ecs\_service\_security\_group\_id) | ecs\_service\_security\_group\_id |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

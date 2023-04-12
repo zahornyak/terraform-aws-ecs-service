@@ -65,7 +65,9 @@ resource "aws_ecs_service" "service" {
   network_configuration {
     subnets          = var.service_subnets
     assign_public_ip = var.assign_public_ip
-    security_groups  = [module.service_container_sg.security_group_id]
+    security_groups = concat([
+      module.service_container_sg.security_group_id
+    ], var.security_groups)
   }
 
   dynamic "load_balancer" {
@@ -111,6 +113,13 @@ locals {
   listener_rule = var.alb_listener_arn != null ? 1 : 0
 }
 
+resource "aws_lb_listener_certificate" "this" {
+  count = local.ssl
+
+  listener_arn    = var.alb_listener_arn
+  certificate_arn = module.acm[0].acm_certificate_arn
+}
+
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 3.3.0"
@@ -121,13 +130,6 @@ module "acm" {
 
   wait_for_validation = true
 
-}
-
-resource "aws_lb_listener_certificate" "this" {
-  count = local.ssl
-
-  listener_arn    = var.alb_listener_arn
-  certificate_arn = module.acm[0].acm_certificate_arn
 }
 
 resource "aws_lb_target_group" "service" {
@@ -261,7 +263,8 @@ module "records_alb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  count = var.alb_listener_arn != null ? 1 : 0
+  for_each = var.alb_listener_arn != null ? { listener_rule = 1 } : {}
+  #  count = local.listener_rule
 
   zone_id = data.aws_route53_zone.this.id
 

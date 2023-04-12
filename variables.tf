@@ -213,3 +213,9 @@ variable "create_ssl" {
   type        = bool
   description = "Creates ssl certificate for your service and attach it to alb listener."
 }
+
+variable "security_groups" {
+  description = "additional security_groups for service"
+  type        = list(string)
+  default     = []
+}
