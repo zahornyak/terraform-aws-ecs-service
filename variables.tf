@@ -151,12 +151,6 @@ variable "retention_in_days" {
   default     = 60
 }
 
-variable "lb_service_port" {
-  description = "load balancer service port. set your main container port here"
-  type        = number
-  default     = null
-}
-
 variable "tg_target_type" {
   description = "target group target type(ip or instance etc)"
   default     = "ip"
@@ -167,5 +161,11 @@ variable "tg_protocol" {
   description = "target group protocol(for example 'HTTP' or 'TCP')"
   default     = "HTTP"
   type        = string
+}
+
+variable "create_ssl" {
+  type        = bool
+  default     = true
+  description = "defines if create ssl for services domains"
 }
 

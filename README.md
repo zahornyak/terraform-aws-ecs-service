@@ -4,8 +4,9 @@
 This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
 
 ### Important note:
-*Load balancer and listener should be created before.*
-
+- *Load balancer and listener should be created before.*
+- *Use `connect_to_lb` and `service_domain` to connect service container to load balancer and create route53 A record*
+- 
 ## Example
 
 ### Single container
@@ -47,14 +48,13 @@ module "ecs_service" {
 
   service_memory  = 1024
   service_cpu     = 512
-  lb_service_port = 80
 }
 ```
 
 ### Multiple containers
 ```hcl
 module "ecs_service" {
-  source = "../"
+  source  = "zahornyak/ecs-service/aws"
 
   region          = "eu-central-1"
   environment     = "production"
@@ -145,7 +145,6 @@ module "ecs_service" {
 
   service_memory  = 1024
   service_cpu     = 512
-  lb_service_port = 80
 }
 ```
 
@@ -198,6 +197,7 @@ module "ecs_service" {
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. | `any` | `{}` | no |
+| <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | defines if create ssl for services domains | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
 | <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Deregistration delay for target group. | `number` | `5` | no |
@@ -208,7 +208,6 @@ module "ecs_service" {
 | <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
 | <a name="input_lb_arn"></a> [lb\_arn](#input\_lb\_arn) | Load balancer arn. | `string` | `null` | no |
 | <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
-| <a name="input_lb_service_port"></a> [lb\_service\_port](#input\_lb\_service\_port) | load balancer service port. set your main container port here | `number` | `null` | no |
 | <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | `null` | no |
 | <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
 | <a name="input_region"></a> [region](#input\_region) | Your region. | `string` | n/a | yes |
@@ -230,5 +229,5 @@ module "ecs_service" {
 | Name | Description |
 |------|-------------|
 | <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
-| <a name="output_ecs_service_security_group_id"></a> [ecs\_service\_security\_group\_id](#output\_ecs\_service\_security\_group\_id) | ecs\_service\_security\_group\_id |
+| <a name="output_ecs_service_security_group_ids"></a> [ecs\_service\_security\_group\_ids](#output\_ecs\_service\_security\_group\_ids) | ecs service security group ids |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

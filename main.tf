@@ -70,19 +70,9 @@ resource "aws_ecs_service" "service" {
     subnets          = var.service_subnets
     assign_public_ip = var.assign_public_ip
     security_groups = concat([
-      module.service_container_sg.security_group_id
+      jsonencode(values(module.service_container_sg)[*].security_group_id)
     ], var.security_groups)
   }
-
-  #  dynamic "load_balancer" {
-  #    # if listener_arn is defined - :create load balancer association block
-  #    for_each = var.lb_listener_arn != null ? [1] : []
-  #    content {
-  #      container_name   = var.service_name
-  #      container_port   = var.lb_service_port
-  #      target_group_arn = aws_lb_target_group.service[0].arn
-  #    }
-  #  }
 
   dynamic "load_balancer" {
     for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
@@ -94,21 +84,6 @@ resource "aws_ecs_service" "service" {
     }
   }
 
-
-  #  dynamic "load_balancer" {q
-  #    # if create_admin_endpoint true - :create load balancer association block
-  #    for_each = var.create_admin_endpoint ? [1] : [0]
-  #    content {
-  #      container_name   = var.service_name
-  #      container_port   = 9901
-  #      target_group_arn = aws_lb_target_group.service_admin[0].arn
-  #    }
-  #  }
-
-
-  #  service_registries {
-  #    registry_arn = aws_service_discovery_service.service.arn
-  #  }
 
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
@@ -296,22 +271,24 @@ module "service_container_sg" {
   source  = "registry.terraform.io/terraform-aws-modules/security-group/aws"
   version = "~> 4.3"
 
-  name        = "${var.environment}-service-container-sg"
-  description = "Security group for ${var.environment} backend Container"
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+
+
+  name        = "${var.environment}-service-${each.value.container_name}-container-sg"
+  description = "Security group for ${var.environment} ${each.value.container_name} Container"
   vpc_id      = var.vpc_id
 
   ingress_with_cidr_blocks = [
     {
-      from_port   = var.lb_service_port
-      to_port     = var.lb_service_port
+      from_port   = each.value.containerPort
+      to_port     = each.value.containerPort
       protocol    = "tcp"
-      description = "${var.service_name} service port"
+      description = "${var.service_name} ${each.value.container_name} container service port"
       cidr_blocks = data.aws_vpc.this.cidr_block
   }]
 
   egress_rules       = ["all-all"]
   egress_cidr_blocks = ["0.0.0.0/0"]
-
 
 }
 
