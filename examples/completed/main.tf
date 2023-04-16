@@ -33,9 +33,8 @@ module "ecs_service" {
     }
   }
 
-  service_memory  = 1024
-  service_cpu     = 512
-  lb_service_port = 80
+  service_memory = 1024
+  service_cpu    = 512
 }
 
 resource "aws_vpc" "main" {
