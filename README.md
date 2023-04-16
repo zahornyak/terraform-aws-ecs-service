@@ -6,7 +6,8 @@ This module is for whole ECS service stack creation: service, task definition, c
 ### Important note:
 - *Load balancer and listener should be created before.*
 - *Use `connect_to_lb` and `service_domain` to connect service container to load balancer and create route53 A record*
-- 
+
+
 ## Example
 
 ### Single container
