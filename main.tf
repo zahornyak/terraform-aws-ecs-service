@@ -108,7 +108,7 @@ resource "aws_lb_listener_certificate" "this" {
 
 module "acm" {
   source   = "terraform-aws-modules/acm/aws"
-  version  = "~> 3.3.0"
+  version  = "~> 3.3"
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
