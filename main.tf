@@ -1,50 +1,54 @@
 # service or gateway container definition creation
 module "service_container_definition" {
-  source          = "registry.terraform.io/cloudposse/ecs-container-definition/aws"
-  version         = "~> 0.58"
-  container_image = var.service_image_tag
-  container_name  = var.service_name
-  essential       = true
+  for_each = var.container_definitions
 
-  container_definition = var.container_definition
+  source  = "registry.terraform.io/cloudposse/ecs-container-definition/aws"
+  version = "~> 0.58"
 
-  container_cpu    = var.service_cpu
-  container_memory = var.service_memory
+  container_image = lookup(each.value, "container_image", null)
+  container_name  = lookup(each.value, "container_name", null)
+  essential       = lookup(each.value, "essential", true)
 
-  stop_timeout = 5
-  log_configuration = var.log_configuration != null ? var.log_configuration : {
+  #  container_definition = var.container_definition
+
+  container_cpu    = lookup(each.value, "container_cpu", null)
+  container_memory = lookup(each.value, "container_memory", null)
+
+  stop_timeout = lookup(each.value, "stop_timeout", 5)
+  log_configuration = lookup(each.value, "log_configuration", null) != null ? lookup(each.value, "log_configuration", null) : {
     logDriver = "awslogs"
     options = {
-      awslogs-group         = aws_cloudwatch_log_group.service_logs.name
+      awslogs-group         = aws_cloudwatch_log_group.service_logs[each.key].name
       awslogs-region        = var.region
-      awslogs-stream-prefix = var.service_name
+      awslogs-stream-prefix = lookup(each.value, "container_name", null)
     }
   }
 
   # docker healthcheck
-  healthcheck = var.docker_healthcheck
+  healthcheck = lookup(each.value, "healthcheck", null)
 
-  #  container_depends_on = var.create_envoy ? var.envoy_dependency : null
+  container_depends_on = lookup(each.value, "container_depends_on", null)
 
-  port_mappings = var.port_mapping != null ? var.port_mapping : [
+  port_mappings = lookup(each.value, "port_mappings", null) != null ? lookup(each.value, "port_mappings", null) : [
     {
-      containerPort = var.service_port
-      protocol      = "tcp"
-      hostPort      = null
+      containerPort = lookup(each.value, "containerPort", null)
+      protocol      = lookup(each.value, "protocol", "tcp")
+      hostPort      = lookup(each.value, "hostPort", null)
     }
   ]
 
-  environment_files = var.environment_files
-  environment       = var.environment_vars
+  environment_files = lookup(each.value, "environment_files", null)
+  environment       = lookup(each.value, "environment", null)
 
-  secrets = var.secrets
+  secrets = lookup(each.value, "secrets", null)
+
 }
 
 
 # task definition for service
 resource "aws_ecs_task_definition" "service" {
   family                   = "${var.environment}_${var.service_name}_task"
-  container_definitions    = module.service_container_definition.json_map_encoded_list
+  container_definitions    = jsonencode(values(module.service_container_definition)[*].json_map_object)
   cpu                      = var.service_cpu
   memory                   = var.service_memory
   requires_compatibilities = var.requires_compatibilities
@@ -70,15 +74,26 @@ resource "aws_ecs_service" "service" {
     ], var.security_groups)
   }
 
+  #  dynamic "load_balancer" {
+  #    # if listener_arn is defined - :create load balancer association block
+  #    for_each = var.lb_listener_arn != null ? [1] : []
+  #    content {
+  #      container_name   = var.service_name
+  #      container_port   = var.lb_service_port
+  #      target_group_arn = aws_lb_target_group.service[0].arn
+  #    }
+  #  }
+
   dynamic "load_balancer" {
-    # if listener_arn is defined - :create load balancer association block
-    for_each = var.lb_listener_arn != null ? [1] : []
+    for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+
     content {
-      container_name   = var.service_name
-      container_port   = var.service_port
-      target_group_arn = aws_lb_target_group.service[0].arn
+      target_group_arn = aws_lb_target_group.service[load_balancer.key].arn
+      container_name   = load_balancer.value.container_name
+      container_port   = load_balancer.value.containerPort
     }
   }
+
 
   #  dynamic "load_balancer" {q
   #    # if create_admin_endpoint true - :create load balancer association block
@@ -97,35 +112,32 @@ resource "aws_ecs_service" "service" {
 
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
-  # thats only if you have alb connection on service
+  # thats only if you have lb connection on service
   health_check_grace_period_seconds = var.lb_listener_arn != null ? var.health_check_grace_period_seconds : null
 
 }
 
 resource "aws_cloudwatch_log_group" "service_logs" {
-  name              = "${var.environment}-${var.service_name}-logs"
-  retention_in_days = 60
-}
+  for_each = { for k, v in var.container_definitions : k => v if try(v.log_configuration, "") == "" }
 
-locals {
-  ssl           = var.create_ssl ? 1 : 0
-  target_group  = var.lb_listener_arn != null || var.target_group_arn == null ? 1 : 0
-  listener_rule = var.lb_listener_arn != null ? 1 : 0
+  name              = "${var.environment}-${lookup(each.value, "container_name", null)}-logs"
+  retention_in_days = var.retention_in_days
 }
 
 resource "aws_lb_listener_certificate" "this" {
-  count = local.ssl
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
   listener_arn    = var.lb_listener_arn
-  certificate_arn = module.acm[0].acm_certificate_arn
+  certificate_arn = module.acm[each.key].acm_certificate_arn
 }
 
 module "acm" {
-  source  = "terraform-aws-modules/acm/aws"
-  version = "~> 3.3.0"
-  count   = local.ssl
+  source   = "terraform-aws-modules/acm/aws"
+  version  = "~> 3.3.0"
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
-  domain_name = "${var.service_domain}.${data.aws_route53_zone.this.name}"
+
+  domain_name = "${lookup(each.value, "service_domain", null)}.${data.aws_route53_zone.this.name}"
   zone_id     = data.aws_route53_zone.this.zone_id
 
   wait_for_validation = true
@@ -134,12 +146,12 @@ module "acm" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  count = local.target_group
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
-  name                 = "alb-${var.environment}-${replace(var.service_name, "_", "")}"
-  port                 = var.service_port
-  protocol             = "HTTP"
-  target_type          = "ip"
+  name                 = "lb-${var.environment}-${replace(each.value.container_name, "_", "")}"
+  port                 = each.value.containerPort
+  protocol             = var.tg_protocol
+  target_type          = var.tg_target_type
   vpc_id               = data.aws_vpc.this.id
   deregistration_delay = var.deregistration_delay
   health_check {
@@ -155,20 +167,20 @@ resource "aws_lb_target_group" "service" {
 
 resource "aws_lb_listener_rule" "service" {
 
-  count = local.listener_rule
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+
 
   listener_arn = var.lb_listener_arn
 
   action {
     type = "forward"
     # if custom target group is not defined - route to service target group
-    target_group_arn = var.target_group_arn != null ? var.target_group_arn : aws_lb_target_group.service[0].arn
+    target_group_arn = aws_lb_target_group.service[each.key].arn
   }
 
   condition {
     host_header {
-      values = ["${var.service_domain}.${data.aws_route53_zone.this.name}"]
-      #      values = [var.listener_host_header]
+      values = ["${each.value.service_domain}.${data.aws_route53_zone.this.name}"]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -183,8 +195,8 @@ data "aws_route53_zone" "this" {
   zone_id = var.route_53_zone_id
 }
 
-data "aws_alb" "this" {
-  arn = var.alb_arn
+data "aws_lb" "this" {
+  arn = var.lb_arn
 }
 
 
@@ -258,22 +270,21 @@ module "ecs_task_role" {
 }
 
 
-module "records_alb" {
+module "records_lb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  for_each = var.lb_listener_arn != null ? { listener_rule = 1 } : {}
-  #  count = local.listener_rule
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
   zone_id = data.aws_route53_zone.this.id
 
   records = [
     {
-      name = var.service_domain
+      name = each.value.service_domain
       type = "A"
       alias = {
-        name    = data.aws_alb.this.dns_name
-        zone_id = data.aws_alb.this.zone_id
+        name    = data.aws_lb.this.dns_name
+        zone_id = data.aws_lb.this.zone_id
       }
     }
   ]
@@ -291,8 +302,8 @@ module "service_container_sg" {
 
   ingress_with_cidr_blocks = [
     {
-      from_port   = var.service_port
-      to_port     = var.service_port
+      from_port   = var.lb_service_port
+      to_port     = var.lb_service_port
       protocol    = "tcp"
       description = "${var.service_name} service port"
       cidr_blocks = data.aws_vpc.this.cidr_block

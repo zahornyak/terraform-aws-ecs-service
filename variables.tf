@@ -1,8 +1,3 @@
-variable "service_image_tag" {
-  description = "Docker image for service."
-  type        = string
-}
-
 variable "service_name" {
   description = "Name of the service."
   type        = string
@@ -23,71 +18,10 @@ variable "region" {
   type        = string
 }
 
-variable "docker_healthcheck" {
-  description = "Docker healthcheck for container."
-  type = object({
-    command     = list(string)
-    retries     = number
-    timeout     = number
-    interval    = number
-    startPeriod = number
-  })
-  default = null
-}
-
-variable "service_port" {
-  description = "Port for your service."
-  type        = number
-  default     = null
-}
-
-variable "port_mapping" {
-  description = "Custom port mapping for service."
-  type = list(object({
-    containerPort = number
-    hostPort      = number
-    protocol      = string
-  }))
-  default = null
-}
-
-variable "environment_vars" {
-  description = "Environment variables for container."
-  type = list(object({
-    name  = string
-    value = string
-  }))
-  default = []
-}
-
-variable "secrets" {
-  description = "Secrets for container."
-  type = list(object({
-    name      = string
-    valueFrom = string
-  }))
-  default = []
-}
-
-variable "log_configuration" {
-  description = "Log configuration."
-  type        = map(any)
-  default     = null
-}
-
-variable "environment_files" {
-  description = "One or more files containing the environment variables to pass to the container. This maps to the --env-file option to docker run. The file must be hosted in Amazon S3. This option is only available to tasks using the EC2 launch type. This is a list of maps"
-  type = list(object({
-    value = string
-    type  = string
-  }))
-  default = []
-}
-
-variable "container_definition" {
-  type        = map(any)
+variable "container_definitions" {
+  type        = any
   default     = {}
-  description = "Your custom container definition."
+  description = "Custom container definitions."
 }
 
 variable "requires_compatibilities" {
@@ -116,6 +50,7 @@ variable "desired_count" {
 variable "min_service_tasks" {
   description = "Minimum service tasks."
   type        = number
+  default     = null
 }
 
 variable "cluster_name" {
@@ -175,16 +110,11 @@ variable "deregistration_delay" {
   description = "Deregistration delay for target group."
 }
 
-variable "target_group_arn" {
-  default     = null
-  description = "Custom target group arn."
-  type        = string
-}
-
-variable "service_domain" {
-  description = "Domain of your service. For example in help.google.com your service domain is 'help'."
-  type        = string
-}
+#variable "target_group_arn" {
+#  default     = null
+#  description = "Custom target group arn."
+#  type        = string
+#}
 
 variable "route_53_zone_id" {
   description = "Route 53 zone id."
@@ -197,9 +127,10 @@ variable "task_role_policy_arns" {
   default     = []
 }
 
-variable "alb_arn" {
+variable "lb_arn" {
   description = "Load balancer arn."
   type        = string
+  default     = null
 }
 
 variable "assign_public_ip" {
@@ -208,14 +139,33 @@ variable "assign_public_ip" {
   description = "Assign_public_ip set true if you are using public subnets."
 }
 
-variable "create_ssl" {
-  default     = true
-  type        = bool
-  description = "Creates ssl certificate for your service and attach it to alb listener."
-}
-
 variable "security_groups" {
   description = "additional security_groups for service"
   type        = list(string)
   default     = []
 }
+
+variable "retention_in_days" {
+  description = "retention_in_days"
+  type        = number
+  default     = 60
+}
+
+variable "lb_service_port" {
+  description = "load balancer service port. set your main container port here"
+  type        = number
+  default     = null
+}
+
+variable "tg_target_type" {
+  description = "target group target type(ip or instance etc)"
+  default     = "ip"
+  type        = string
+}
+
+variable "tg_protocol" {
+  description = "target group protocol(for example 'HTTP' or 'TCP')"
+  default     = "HTTP"
+  type        = string
+}
+
