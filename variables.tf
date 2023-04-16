@@ -134,7 +134,7 @@ variable "service_subnets" {
   type        = list(string)
 }
 
-variable "alb_listener_arn" {
+variable "lb_listener_arn" {
   description = "Listener arn for load balancer connection"
   type        = string
   default     = null

@@ -72,7 +72,7 @@ resource "aws_ecs_service" "service" {
 
   dynamic "load_balancer" {
     # if listener_arn is defined - :create load balancer association block
-    for_each = var.alb_listener_arn != null ? [1] : []
+    for_each = var.lb_listener_arn != null ? [1] : []
     content {
       container_name   = var.service_name
       container_port   = var.service_port
@@ -98,7 +98,7 @@ resource "aws_ecs_service" "service" {
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
   # thats only if you have alb connection on service
-  health_check_grace_period_seconds = var.alb_listener_arn != null ? var.health_check_grace_period_seconds : null
+  health_check_grace_period_seconds = var.lb_listener_arn != null ? var.health_check_grace_period_seconds : null
 
 }
 
@@ -109,14 +109,14 @@ resource "aws_cloudwatch_log_group" "service_logs" {
 
 locals {
   ssl           = var.create_ssl ? 1 : 0
-  target_group  = var.alb_listener_arn != null || var.target_group_arn == null ? 1 : 0
-  listener_rule = var.alb_listener_arn != null ? 1 : 0
+  target_group  = var.lb_listener_arn != null || var.target_group_arn == null ? 1 : 0
+  listener_rule = var.lb_listener_arn != null ? 1 : 0
 }
 
 resource "aws_lb_listener_certificate" "this" {
   count = local.ssl
 
-  listener_arn    = var.alb_listener_arn
+  listener_arn    = var.lb_listener_arn
   certificate_arn = module.acm[0].acm_certificate_arn
 }
 
@@ -154,11 +154,10 @@ resource "aws_lb_target_group" "service" {
 }
 
 resource "aws_lb_listener_rule" "service" {
-  # if create_envoy is false - create target group
-  #  count = var.alb_listener_arn != null ? 1 : 0
+
   count = local.listener_rule
 
-  listener_arn = var.alb_listener_arn
+  listener_arn = var.lb_listener_arn
 
   action {
     type = "forward"
@@ -263,7 +262,7 @@ module "records_alb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  for_each = var.alb_listener_arn != null ? { listener_rule = 1 } : {}
+  for_each = var.lb_listener_arn != null ? { listener_rule = 1 } : {}
   #  count = local.listener_rule
 
   zone_id = data.aws_route53_zone.this.id
