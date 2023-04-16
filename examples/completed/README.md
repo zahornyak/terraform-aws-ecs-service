@@ -1,7 +1,6 @@
 ```hcl
 module "ecs_service" {
-  source  = "zahornyak/ecs-service/aws"
-  version = "0.0.4"
+  source = "zahornyak/ecs-service/aws"
 
   region          = "eu-central-1"
   environment     = "production"
@@ -9,20 +8,35 @@ module "ecs_service" {
   service_subnets = [aws_subnet.main.id]
   # assign_public_ip = true # if you are using public subnets
   cluster_name     = aws_ecs_cluster.main.name
-  route_53_zone_id = aws_route53_zone.primary.zone_id
-  alb_arn          = aws_lb.main.arn
-  alb_listener_arn = aws_lb_listener.main.arn
-  create_ssl       = true # requests ssl for service and attach it to listener
+  route_53_zone_id = aws_route53_zone.primary
+  lb_arn           = aws_lb.main.arn
+  lb_listener_arn  = aws_lb_listener.main.arn
+  create_ssl       = true # requests ssl for service and attach it to listener rule
 
-  service_domain    = "api"
-  service_name      = "backend"
-  min_service_tasks = 1
+  service_name  = "backend"
+  desired_count = 1
 
-  service_image_tag = "nginx:latest"
+  container_definitions = {
+    proxy = {
+      service_domain   = "api-test"
+      connect_to_lb    = true
+      container_image  = "nginx:latest"
+      container_name   = "proxy"
+      container_cpu    = 256
+      container_memory = 256
+      containerPort    = 80
+      environment = [
+        {
+          "name"  = "foo"
+          "value" = "bar"
+        }
+      ]
+    }
+  }
 
-  service_memory = 512
-  service_cpu    = 256
-  service_port   = 80
+  service_memory  = 1024
+  service_cpu     = 512
+  lb_service_port = 80
 }
 
 resource "aws_vpc" "main" {
@@ -68,4 +82,5 @@ resource "aws_lb_listener" "main" {
 resource "aws_ecs_cluster" "main" {
   name = "main"
 }
+
 ```
