@@ -4,13 +4,16 @@ module "ecs_service" {
   region          = "eu-central-1"
   environment     = "production"
   vpc_id          = aws_vpc.main.id
+  vpc_cidr_block  = aws_vpc.main.cidr_block # use when you dont have previously created vpc
   service_subnets = [aws_subnet.main.id]
   # assign_public_ip = true # if you are using public subnets
-  cluster_name     = aws_ecs_cluster.main.name
-  route_53_zone_id = aws_route53_zone.primary
-  lb_arn           = aws_lb.main.arn
-  lb_listener_arn  = aws_lb_listener.main.arn
-  create_ssl       = true # requests ssl for service and attach it to listener rule
+  cluster_name       = aws_ecs_cluster.main.name
+  route_53_zone_id   = aws_route53_zone.primary.id
+  route_53_zone_name = aws_route53_zone.primary.name # use when you dont have previously created Route53 zone
+  lb_arn             = aws_lb.main.arn
+  lb_listener_arn    = aws_lb_listener.main.arn
+  lb_dns_name        = aws_lb.main.dns_name # use when you dont have previously created load balancer
+  create_ssl         = true                 # requests ssl for service and attach it to listener rule
 
   service_name  = "backend"
   desired_count = 1

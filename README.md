@@ -4,8 +4,8 @@
 This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
 
 ### Important note:
-- *Load balancer and listener should be created before.*
 - *Use `connect_to_lb` and `service_domain` to connect service container to load balancer and create route53 A record*
+- *Use `vpc_cidr_block`, `route_53_zone_name`, `lb_dns_name` only when you dont have previously created resources*
 
 
 ## Example
@@ -15,16 +15,19 @@ This module is for whole ECS service stack creation: service, task definition, c
 module "ecs_service" {
   source  = "zahornyak/ecs-service/aws"
 
-  region          = "eu-central-1"
-  environment     = "production"
-  vpc_id          = "vpc-080fd3099892"
-  service_subnets = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
+  region             = "eu-central-1"
+  environment        = "production"
+  vpc_id             = "vpc-080fd3099892"
+  vpc_cidr_block     = "10.0.0.0/16" # use when you dont have previously created vpc
+  service_subnets    = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
   # assign_public_ip = true # if you are using public subnets
-  cluster_name     = "production-cluster"
-  route_53_zone_id = "Z01006347593463S0ZFL7A2"
-  lb_arn           = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
-  lb_listener_arn  = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
-  create_ssl       = true # requests ssl for service and attach it to listener rule
+  cluster_name       = "production-cluster"
+  route_53_zone_id   = "Z01006347593463S0ZFL7A2"
+  route_53_zone_name = "example.com" # use when you dont have previously created Route53 zone
+  lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
+  lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
+  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com" # use when you dont have previously created load balancer
+  create_ssl         = true # requests ssl for service and attach it to listener rule
 
   service_name  = "backend"
   desired_count = 1
@@ -149,6 +152,70 @@ module "ecs_service" {
 }
 ```
 
+### No load balancer
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+
+  region          = var.region
+  environment     = var.environment
+  vpc_id          = var.vpc_id
+  service_subnets = var.subnets
+  vpc_cidr_block  = var.vpc_cidr_block
+
+  # assign_public_ip = true # if you are using public subnets
+  cluster_name = aws_ecs_cluster.ecs_cluster.name
+
+  service_name  = "backend"
+  desired_count = 1
+
+  container_definitions = {
+    proxy = {
+      container_image  = "nginx:latest"
+      container_name   = "proxy"
+      container_cpu    = 256
+      container_memory = 256
+      containerPort    = 80
+      environment = [
+        {
+          "name"  = "foo"
+          "value" = "bar"
+        }
+      ]
+    }
+    backend = {
+      container_image  = "nginx:latest"
+      container_name   = "backend"
+      container_cpu    = 256
+      container_memory = 256
+      container_depends_on = [
+        {
+          containerName = "proxy"
+          condition     = "START"
+        }
+      ]
+      containerPort = 3000
+      healthcheck = {
+        retries     = 5
+        command     = ["CMD-SHELL", "curl -f http://localhost:3000"]
+        timeout     = 15
+        interval    = 30
+        startPeriod = 10
+      }
+      environment = [
+        {
+          "name"  = "foo"
+          "value" = "bar"
+        }
+      ]
+    }
+  }
+
+  service_memory = 1024
+  service_cpu    = 512
+}
+```
+
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -208,13 +275,15 @@ module "ecs_service" {
 | <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `30` | no |
 | <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
 | <a name="input_lb_arn"></a> [lb\_arn](#input\_lb\_arn) | Load balancer arn. | `string` | `null` | no |
+| <a name="input_lb_dns_name"></a> [lb\_dns\_name](#input\_lb\_dns\_name) | Load balancer dns name. Use only if you dont have previously created Load Balancer | `string` | `null` | no |
 | <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
 | <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | `null` | no |
 | <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
 | <a name="input_region"></a> [region](#input\_region) | Your region. | `string` | n/a | yes |
 | <a name="input_requires_compatibilities"></a> [requires\_compatibilities](#input\_requires\_compatibilities) | Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE\_SPOT', 'EC2' etc. | `list(string)` | <pre>[<br>  "FARGATE"<br>]</pre> | no |
 | <a name="input_retention_in_days"></a> [retention\_in\_days](#input\_retention\_in\_days) | retention\_in\_days | `number` | `60` | no |
-| <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | n/a | yes |
+| <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | `null` | no |
+| <a name="input_route_53_zone_name"></a> [route\_53\_zone\_name](#input\_route\_53\_zone\_name) | route 53 zone name. Use only when you dont have previously created Route53 zone | `string` | `null` | no |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | additional security\_groups for service | `list(string)` | `[]` | no |
 | <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
@@ -223,6 +292,7 @@ module "ecs_service" {
 | <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Policies to attach to task role of ECS container. | `list(string)` | `[]` | no |
 | <a name="input_tg_protocol"></a> [tg\_protocol](#input\_tg\_protocol) | target group protocol(for example 'HTTP' or 'TCP') | `string` | `"HTTP"` | no |
 | <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
+| <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id. | `string` | n/a | yes |
 
 ## Outputs

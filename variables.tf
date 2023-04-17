@@ -119,6 +119,7 @@ variable "deregistration_delay" {
 variable "route_53_zone_id" {
   description = "Route 53 zone id."
   type        = string
+  default     = null
 }
 
 variable "task_role_policy_arns" {
@@ -167,5 +168,23 @@ variable "create_ssl" {
   type        = bool
   default     = true
   description = "defines if create ssl for services domains"
+}
+
+variable "vpc_cidr_block" {
+  type        = string
+  default     = null
+  description = "cidr block for vpc. Use that variable when you dont have previously created VPC"
+}
+
+variable "route_53_zone_name" {
+  type        = string
+  default     = null
+  description = "route 53 zone name. Use only when you dont have previously created Route53 zone"
+}
+
+variable "lb_dns_name" {
+  type        = string
+  default     = null
+  description = "Load balancer dns name. Use only if you dont have previously created Load Balancer"
 }
 

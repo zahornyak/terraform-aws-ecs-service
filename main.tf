@@ -18,7 +18,8 @@ module "service_container_definition" {
   log_configuration = lookup(each.value, "log_configuration", null) != null ? lookup(each.value, "log_configuration", null) : {
     logDriver = "awslogs"
     options = {
-      awslogs-group         = aws_cloudwatch_log_group.service_logs[each.key].name
+      awslogs-group = aws_cloudwatch_log_group.service_logs[each.key].name
+      # remove and take region from data TODO
       awslogs-region        = var.region
       awslogs-stream-prefix = lookup(each.value, "container_name", null)
     }
@@ -88,6 +89,8 @@ resource "aws_ecs_service" "service" {
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
   # thats only if you have lb connection on service
+
+  # add nlb health logic !! TODO
   health_check_grace_period_seconds = var.lb_listener_arn != null ? var.health_check_grace_period_seconds : null
 
 }
@@ -112,8 +115,8 @@ module "acm" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
-  domain_name = "${lookup(each.value, "service_domain", null)}.${data.aws_route53_zone.this.name}"
-  zone_id     = data.aws_route53_zone.this.zone_id
+  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[0].name : var.route_53_zone_name}"
+  zone_id     = var.route_53_zone_id
 
   wait_for_validation = true
 
@@ -127,8 +130,9 @@ resource "aws_lb_target_group" "service" {
   port                 = each.value.containerPort
   protocol             = var.tg_protocol
   target_type          = var.tg_target_type
-  vpc_id               = data.aws_vpc.this.id
+  vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay
+  # for nlb TODO
   health_check {
     enabled             = try(var.health_check.enabled, null)
     interval            = try(var.health_check.interval, null)
@@ -155,7 +159,7 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     host_header {
-      values = ["${each.value.service_domain}.${data.aws_route53_zone.this.name}"]
+      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[0].name : var.route_53_zone_name}"]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -163,14 +167,17 @@ resource "aws_lb_listener_rule" "service" {
 
 
 data "aws_vpc" "this" {
-  id = var.vpc_id
+  count = var.vpc_id != null ? 1 : 0
+  id    = var.vpc_id
 }
 
 data "aws_route53_zone" "this" {
+  count   = var.route_53_zone_id != null ? 1 : 0
   zone_id = var.route_53_zone_id
 }
 
 data "aws_lb" "this" {
+  #  count = var.lb_arn != null ? 1 : 0
   arn = var.lb_arn
 }
 
@@ -251,15 +258,15 @@ module "records_lb" {
 
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
-  zone_id = data.aws_route53_zone.this.id
+  zone_id = var.route_53_zone_id
 
   records = [
     {
       name = each.value.service_domain
       type = "A"
       alias = {
-        name    = data.aws_lb.this.dns_name
-        zone_id = data.aws_lb.this.zone_id
+        name    = var.lb_dns_name == null ? data.aws_lb.this.dns_name : var.lb_dns_name
+        zone_id = var.route_53_zone_id
       }
     }
   ]
@@ -284,7 +291,7 @@ module "service_container_sg" {
       to_port     = each.value.containerPort
       protocol    = "tcp"
       description = "${var.service_name} ${each.value.container_name} container service port"
-      cidr_blocks = data.aws_vpc.this.cidr_block
+      cidr_blocks = var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block
   }]
 
   egress_rules       = ["all-all"]
