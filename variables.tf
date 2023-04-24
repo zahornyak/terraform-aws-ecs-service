@@ -13,11 +13,6 @@ variable "service_memory" {
   type        = number
 }
 
-variable "region" {
-  description = "Your region."
-  type        = string
-}
-
 variable "container_definitions" {
   type        = any
   default     = {}

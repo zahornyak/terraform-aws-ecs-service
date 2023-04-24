@@ -18,9 +18,8 @@ module "service_container_definition" {
   log_configuration = lookup(each.value, "log_configuration", null) != null ? lookup(each.value, "log_configuration", null) : {
     logDriver = "awslogs"
     options = {
-      awslogs-group = aws_cloudwatch_log_group.service_logs[each.key].name
-      # remove and take region from data TODO
-      awslogs-region        = var.region
+      awslogs-group         = aws_cloudwatch_log_group.service_logs[each.key].name
+      awslogs-region        = data.aws_region.current.name
       awslogs-stream-prefix = lookup(each.value, "container_name", null)
     }
   }
@@ -44,6 +43,8 @@ module "service_container_definition" {
   secrets = lookup(each.value, "secrets", null)
 
 }
+
+data "aws_region" "current" {}
 
 
 # task definition for service
