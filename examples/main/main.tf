@@ -1,7 +1,6 @@
 module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
 
-  region          = "eu-central-1"
   environment     = "production"
   vpc_id          = "vpc-080fd3099892"
   service_subnets = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]

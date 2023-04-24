@@ -1,7 +1,6 @@
 module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
 
-  region          = "eu-central-1"
   environment     = "production"
   vpc_id          = aws_vpc.main.id
   vpc_cidr_block  = aws_vpc.main.cidr_block # use when you dont have previously created vpc

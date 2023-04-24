@@ -15,7 +15,6 @@ This module is for whole ECS service stack creation: service, task definition, c
 module "ecs_service" {
   source  = "zahornyak/ecs-service/aws"
 
-  region             = "eu-central-1"
   environment        = "production"
   vpc_id             = "vpc-080fd3099892"
   vpc_cidr_block     = "10.0.0.0/16" # use when you dont have previously created vpc
@@ -60,7 +59,6 @@ module "ecs_service" {
 module "ecs_service" {
   source  = "zahornyak/ecs-service/aws"
 
-  region          = "eu-central-1"
   environment     = "production"
   vpc_id          = "vpc-080fd3099892"
   service_subnets = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
@@ -157,7 +155,6 @@ module "ecs_service" {
 module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
 
-  region          = var.region
   environment     = var.environment
   vpc_id          = var.vpc_id
   service_subnets = var.subnets
