@@ -258,6 +258,22 @@ module "ecs-service" {
 }
 ```
 
+### Capacity provider strategy configuration
+```hcl
+module "ecs-service" {
+  source = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+
+  capacity_provider_strategy = {
+    main = {
+      capacity_provider = "FARGATE_SPOT"
+      base              = 1
+      weight            = 1
+    }
+  }
+}
+```
+
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -309,6 +325,7 @@ module "ecs-service" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
+| <a name="input_capacity_provider_strategy"></a> [capacity\_provider\_strategy](#input\_capacity\_provider\_strategy) | capacity\_provider\_strategy | `any` | `{}` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. | `any` | `{}` | no |
 | <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `300` | no |

@@ -67,7 +67,18 @@ resource "aws_ecs_service" "service" {
   desired_count          = var.desired_count != null ? var.desired_count : var.min_service_tasks
   cluster                = var.cluster_name
   enable_execute_command = true
-  launch_type            = var.launch_type
+  launch_type            = var.capacity_provider_strategy == null ? var.launch_type : null
+
+
+  dynamic "capacity_provider_strategy" {
+    for_each = var.capacity_provider_strategy
+    content {
+      capacity_provider = try(capacity_provider_strategy.value.capacity_provider, "FARGATE_SPOT")
+      base              = try(capacity_provider_strategy.value.base, 1)
+      weight            = try(capacity_provider_strategy.value.weight, 1)
+    }
+  }
+
 
   network_configuration {
     subnets          = var.service_subnets

@@ -239,6 +239,12 @@ variable "cpu_scaling" {
   default     = true
 }
 
+variable "capacity_provider_strategy" {
+  description = "capacity_provider_strategy"
+  type        = any
+  default     = {}
+}
+
 
 
 
