@@ -13,7 +13,7 @@ This module is for whole ECS service stack creation: service, task definition, c
 ### Single container
 ```hcl
 module "ecs_service" {
-  source  = "zahornyak/ecs-service/aws"
+  source = "zahornyak/ecs-service/aws"
 
   environment        = "production"
   vpc_id             = "vpc-080fd3099892"
@@ -25,7 +25,8 @@ module "ecs_service" {
   route_53_zone_name = "example.com" # use when you dont have previously created Route53 zone
   lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
   lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
-  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com" # use when you dont have previously created load balancer
+  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com"
+  # use when you dont have previously created load balancer
   create_ssl         = true # requests ssl for service and attach it to listener rule
 
   service_name  = "backend"
@@ -40,7 +41,7 @@ module "ecs_service" {
       container_cpu    = 256
       container_memory = 256
       containerPort    = 80
-      environment = [
+      environment      = [
         {
           "name"  = "foo"
           "value" = "bar"
@@ -49,8 +50,8 @@ module "ecs_service" {
     }
   }
 
-  service_memory  = 1024
-  service_cpu     = 512
+  service_memory = 1024
+  service_cpu    = 512
 }
 ```
 
@@ -143,8 +144,6 @@ module "ecs_service" {
       ]
     }
     }
-  }
-
   service_memory  = 1024
   service_cpu     = 512
 }
@@ -173,7 +172,7 @@ module "ecs_service" {
       container_cpu    = 256
       container_memory = 256
       containerPort    = 80
-      environment = [
+      environment      = [
         {
           "name"  = "foo"
           "value" = "bar"
@@ -181,10 +180,10 @@ module "ecs_service" {
       ]
     }
     backend = {
-      container_image  = "nginx:latest"
-      container_name   = "backend"
-      container_cpu    = 256
-      container_memory = 256
+      container_image      = "nginx:latest"
+      container_name       = "backend"
+      container_cpu        = 256
+      container_memory     = 256
       container_depends_on = [
         {
           containerName = "proxy"
@@ -192,7 +191,7 @@ module "ecs_service" {
         }
       ]
       containerPort = 3000
-      healthcheck = {
+      healthcheck   = {
         retries     = 5
         command     = ["CMD-SHELL", "curl -f http://localhost:3000"]
         timeout     = 15
@@ -210,6 +209,52 @@ module "ecs_service" {
 
   service_memory = 1024
   service_cpu    = 512
+}
+```
+
+### Autoscaling with default scaling values
+```hcl
+module "ecs-service" {
+  source  = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+
+  min_service_tasks = 1
+  max_service_tasks = 6
+}
+```
+### Autoscaling with custom scaling values
+```hcl
+module "ecs-service" {
+  source = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+
+  min_service_tasks = 1
+  max_service_tasks = 6
+
+  cpu_scaling_target_value = 40
+  cpu_scale_in_cooldown    = 350
+  cpu_scale_out_cooldown   = 200
+
+  memory_scaling_target_value = 90
+  memory_scale_in_cooldown    = 350
+  memory_scale_out_cooldown   = 300
+}
+```
+### Autoscaling with custom scaling values (no memory or cpu scaling)
+```hcl
+module "ecs-service" {
+  source = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+
+  min_service_tasks = 1
+  max_service_tasks = 6
+
+  cpu_scaling_target_value = 40
+  cpu_scale_in_cooldown    = 350
+  cpu_scale_out_cooldown   = 200
+
+  memory_scaling = false
+#  cpu_scaling    = false
 }
 ```
 
@@ -244,6 +289,9 @@ module "ecs_service" {
 
 | Name | Type |
 |------|------|
+| [aws_appautoscaling_policy.target_tracking_scaling_cpu_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
+| [aws_appautoscaling_policy.target_tracking_scaling_memory_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
+| [aws_appautoscaling_target.service_scaling](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
 | [aws_cloudwatch_log_group.service_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_ecs_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
@@ -263,6 +311,10 @@ module "ecs_service" {
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. | `any` | `{}` | no |
+| <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `300` | no |
+| <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `120` | no |
+| <a name="input_cpu_scaling"></a> [cpu\_scaling](#input\_cpu\_scaling) | if true - creates cpu scaling | `bool` | `true` | no |
+| <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `30` | no |
 | <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | defines if create ssl for services domains | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
@@ -270,11 +322,16 @@ module "ecs_service" {
 | <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired count for service. | `number` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
 | <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Custom healthcheck for target group. | `any` | `null` | no |
-| <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `30` | no |
+| <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `null` | no |
 | <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
 | <a name="input_lb_arn"></a> [lb\_arn](#input\_lb\_arn) | Load balancer arn. | `string` | `null` | no |
 | <a name="input_lb_dns_name"></a> [lb\_dns\_name](#input\_lb\_dns\_name) | Load balancer dns name. Use only if you dont have previously created Load Balancer | `string` | `null` | no |
 | <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
+| <a name="input_max_service_tasks"></a> [max\_service\_tasks](#input\_max\_service\_tasks) | Maximum service tasks. | `number` | `null` | no |
+| <a name="input_memory_scale_in_cooldown"></a> [memory\_scale\_in\_cooldown](#input\_memory\_scale\_in\_cooldown) | memory scale\_in\_cooldown | `number` | `300` | no |
+| <a name="input_memory_scale_out_cooldown"></a> [memory\_scale\_out\_cooldown](#input\_memory\_scale\_out\_cooldown) | memory scale\_out\_cooldown | `number` | `120` | no |
+| <a name="input_memory_scaling"></a> [memory\_scaling](#input\_memory\_scaling) | if true - creates memory scaling | `bool` | `true` | no |
+| <a name="input_memory_scaling_target_value"></a> [memory\_scaling\_target\_value](#input\_memory\_scaling\_target\_value) | memory scaling\_target\_value | `number` | `60` | no |
 | <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | `null` | no |
 | <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
 | <a name="input_requires_compatibilities"></a> [requires\_compatibilities](#input\_requires\_compatibilities) | Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE\_SPOT', 'EC2' etc. | `list(string)` | <pre>[<br>  "FARGATE"<br>]</pre> | no |

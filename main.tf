@@ -91,9 +91,8 @@ resource "aws_ecs_service" "service" {
 
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
-  # thats only if you have lb connection on service
 
-  # add nlb health logic !! TODO
+  # thats only if you have lb connection on service
   health_check_grace_period_seconds = var.lb_listener_arn != null ? var.health_check_grace_period_seconds : null
 
 }
@@ -135,7 +134,6 @@ resource "aws_lb_target_group" "service" {
   target_type          = var.tg_target_type
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay
-  # for nlb TODO
   health_check {
     enabled             = try(var.health_check.enabled, null)
     interval            = try(var.health_check.interval, null)
@@ -301,6 +299,59 @@ module "service_container_sg" {
   egress_rules       = ["all-all"]
   egress_cidr_blocks = ["0.0.0.0/0"]
 
+}
+
+# add autoscaling TODO
+resource "aws_appautoscaling_target" "service_scaling" {
+  count = var.max_service_tasks != null || var.max_service_tasks != null || var.cpu_scaling_target_value != null || var.cpu_scale_in_cooldown != null || var.cpu_scale_out_cooldown != null || var.memory_scaling_target_value != null || var.memory_scale_in_cooldown != null || var.memory_scale_out_cooldown != null ? 1 : 0
+
+  max_capacity       = var.max_service_tasks
+  min_capacity       = var.min_service_tasks
+  resource_id        = "service/${var.cluster_name}/${aws_ecs_service.service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "target_tracking_scaling_cpu_service" {
+  count = var.max_service_tasks == null && var.max_service_tasks == null && var.cpu_scaling_target_value == null && var.cpu_scale_in_cooldown == null && var.cpu_scale_out_cooldown == null || var.cpu_scaling == false ? 0 : 1
+
+  name               = "TargetTrackingScaling_cpu_${var.environment}_${var.service_name}_service"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.service_scaling[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.service_scaling[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.service_scaling[0].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = var.cpu_scaling_target_value
+    scale_in_cooldown  = var.cpu_scale_in_cooldown
+    scale_out_cooldown = var.cpu_scale_out_cooldown
+  }
+}
+
+resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
+  count = var.max_service_tasks == null && var.memory_scaling_target_value == null && var.memory_scale_in_cooldown == null && var.memory_scale_out_cooldown == null || var.memory_scaling == false ? 0 : 1
+
+  name               = "TargetTrackingScaling_memory_${var.environment}_${var.service_name}_service"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.service_scaling[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.service_scaling[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.service_scaling[0].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+
+    target_value       = var.memory_scaling_target_value
+    scale_in_cooldown  = var.memory_scale_in_cooldown
+    scale_out_cooldown = var.memory_scale_out_cooldown
+
+    disable_scale_in = true
+  }
 }
 
 

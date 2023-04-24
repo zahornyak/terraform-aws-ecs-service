@@ -42,12 +42,6 @@ variable "desired_count" {
   default     = null
 }
 
-variable "min_service_tasks" {
-  description = "Minimum service tasks."
-  type        = number
-  default     = null
-}
-
 variable "cluster_name" {
   description = "Name of the ECS Cluster."
   type        = string
@@ -85,7 +79,7 @@ variable "deployment_minimum_healthy_percent" {
 variable "health_check_grace_period_seconds" {
   description = "health_check_grace_period_seconds"
   type        = number
-  default     = 30
+  default     = null
 }
 
 variable "health_check" {
@@ -182,4 +176,69 @@ variable "lb_dns_name" {
   default     = null
   description = "Load balancer dns name. Use only if you dont have previously created Load Balancer"
 }
+
+# scaling
+
+variable "min_service_tasks" {
+  description = "Minimum service tasks."
+  type        = number
+  default     = null
+}
+
+variable "max_service_tasks" {
+  description = "Maximum service tasks."
+  type        = number
+  default     = null
+}
+
+variable "cpu_scaling_target_value" {
+  description = "cpu_scaling target_value"
+  type        = number
+  default     = 30
+}
+
+variable "cpu_scale_in_cooldown" {
+  description = "cpu scale_in_cooldown"
+  type        = number
+  default     = 300
+}
+
+variable "cpu_scale_out_cooldown" {
+  description = "cpu scale_out_cooldown"
+  type        = number
+  default     = 120
+}
+
+variable "memory_scaling_target_value" {
+  description = "memory scaling_target_value"
+  type        = number
+  default     = 60
+}
+
+variable "memory_scale_in_cooldown" {
+  description = "memory scale_in_cooldown"
+  type        = number
+  default     = 300
+}
+
+variable "memory_scale_out_cooldown" {
+  description = "memory scale_out_cooldown"
+  type        = number
+  default     = 120
+}
+
+variable "memory_scaling" {
+  description = "if true - creates memory scaling"
+  type        = bool
+  default     = true
+}
+
+variable "cpu_scaling" {
+  description = "if true - creates cpu scaling"
+  type        = bool
+  default     = true
+}
+
+
+
 
