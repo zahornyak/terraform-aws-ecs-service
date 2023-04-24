@@ -245,6 +245,18 @@ variable "capacity_provider_strategy" {
   default     = {}
 }
 
+variable "ordered_placement_strategy" {
+  description = "ordered_placement_strategy"
+  type        = any
+  default     = {}
+}
+
+variable "placement_constraints" {
+  description = "placement_constraints"
+  type        = any
+  default     = {}
+}
+
 
 
 

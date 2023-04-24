@@ -80,6 +80,25 @@ resource "aws_ecs_service" "service" {
   }
 
 
+  dynamic "ordered_placement_strategy" {
+    for_each = var.ordered_placement_strategy
+    content {
+      type  = try(ordered_placement_strategy.value.type, null)
+      field = try(ordered_placement_strategy.value.field, null)
+    }
+  }
+
+  dynamic "placement_constraints" {
+    for_each = var.placement_constraints
+    content {
+      type       = try(placement_constraints.value.type, null)
+      expression = try(placement_constraints.value.expression, null)
+    }
+  }
+
+
+
+
   network_configuration {
     subnets          = var.service_subnets
     assign_public_ip = var.assign_public_ip
