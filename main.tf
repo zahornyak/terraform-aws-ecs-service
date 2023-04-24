@@ -58,6 +58,7 @@ resource "aws_ecs_task_definition" "service" {
   task_role_arn            = module.ecs_task_role.iam_role_arn
 }
 
+
 # service creation
 resource "aws_ecs_service" "service" {
   name                   = "${var.environment}_${var.service_name}_service"
@@ -70,9 +71,9 @@ resource "aws_ecs_service" "service" {
   network_configuration {
     subnets          = var.service_subnets
     assign_public_ip = var.assign_public_ip
-    security_groups = concat([
-      jsonencode(values(module.service_container_sg)[*].security_group_id)
-    ], var.security_groups)
+    security_groups = concat(
+      values(module.service_container_sg)[*].security_group_id
+    , var.security_groups)
   }
 
   dynamic "load_balancer" {
@@ -84,6 +85,7 @@ resource "aws_ecs_service" "service" {
       container_port   = load_balancer.value.containerPort
     }
   }
+
 
 
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
@@ -279,7 +281,7 @@ module "service_container_sg" {
   source  = "registry.terraform.io/terraform-aws-modules/security-group/aws"
   version = "~> 4.3"
 
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v }
 
 
   name        = "${var.environment}-service-${each.value.container_name}-container-sg"
