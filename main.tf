@@ -1,4 +1,4 @@
-# service or gateway container definition creation
+# service container definition creation
 module "service_container_definition" {
   for_each = var.container_definitions
 
@@ -59,7 +59,6 @@ resource "aws_ecs_task_definition" "service" {
   task_role_arn            = module.ecs_task_role.iam_role_arn
 }
 
-# capacity provider strategy TODO
 # service creation
 resource "aws_ecs_service" "service" {
   name                   = "${var.environment}_${var.service_name}_service"
