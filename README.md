@@ -25,8 +25,7 @@ module "ecs_service" {
   route_53_zone_name = "example.com" # use when you dont have previously created Route53 zone
   lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
   lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
-  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com"
-  # use when you dont have previously created load balancer
+  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com" # use when you dont have previously created load balancer
   create_ssl         = true # requests ssl for service and attach it to listener rule
 
   service_name  = "backend"
