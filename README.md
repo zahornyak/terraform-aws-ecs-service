@@ -299,6 +299,19 @@ module "ecs_service" {
 
 | Name | Description |
 |------|-------------|
+| <a name="output_acm_arn"></a> [acm\_arn](#output\_acm\_arn) | acm arn |
+| <a name="output_cloudwatch_log_group_arns"></a> [cloudwatch\_log\_group\_arns](#output\_cloudwatch\_log\_group\_arns) | aws cloudwatch log group arns |
+| <a name="output_container_definitions"></a> [container\_definitions](#output\_container\_definitions) | container definitions of your task definition |
 | <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
+| <a name="output_ecs_service_name"></a> [ecs\_service\_name](#output\_ecs\_service\_name) | ecs service name |
 | <a name="output_ecs_service_security_group_ids"></a> [ecs\_service\_security\_group\_ids](#output\_ecs\_service\_security\_group\_ids) | ecs service security group ids |
+| <a name="output_ecs_task_definition_arn"></a> [ecs\_task\_definition\_arn](#output\_ecs\_task\_definition\_arn) | task definition arn |
+| <a name="output_ecs_task_execution_role_arn"></a> [ecs\_task\_execution\_role\_arn](#output\_ecs\_task\_execution\_role\_arn) | ecs task execution role arn |
+| <a name="output_ecs_task_policy_arn"></a> [ecs\_task\_policy\_arn](#output\_ecs\_task\_policy\_arn) | ecs task policy arn |
+| <a name="output_ecs_task_role_arn"></a> [ecs\_task\_role\_arn](#output\_ecs\_task\_role\_arn) | ecs task role arn |
+| <a name="output_lb_listener_certificate"></a> [lb\_listener\_certificate](#output\_lb\_listener\_certificate) | lb listener certificate |
+| <a name="output_lb_listener_rule_arns"></a> [lb\_listener\_rule\_arns](#output\_lb\_listener\_rule\_arns) | load balancer listener rules arns |
+| <a name="output_records_lb_names"></a> [records\_lb\_names](#output\_records\_lb\_names) | load balancers records names |
+| <a name="output_service_container_sg_ids"></a> [service\_container\_sg\_ids](#output\_service\_container\_sg\_ids) | service container sg ids |
+| <a name="output_target_group_arns"></a> [target\_group\_arns](#output\_target\_group\_arns) | target group arns |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

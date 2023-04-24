@@ -177,7 +177,8 @@ data "aws_route53_zone" "this" {
 }
 
 data "aws_lb" "this" {
-  #  count = var.lb_arn != null ? 1 : 0
+  for_each = { for k, v in var.container_definitions : k => v if try(v.lb_arn, null) != null }
+  #  count = try(var.lb_arn != null ? 1 : 0, 0)
   arn = var.lb_arn
 }
 
@@ -265,7 +266,7 @@ module "records_lb" {
       name = each.value.service_domain
       type = "A"
       alias = {
-        name    = var.lb_dns_name == null ? data.aws_lb.this.dns_name : var.lb_dns_name
+        name    = var.lb_dns_name == null ? data.aws_lb.this[0].dns_name : var.lb_dns_name
         zone_id = var.route_53_zone_id
       }
     }
