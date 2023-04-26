@@ -68,6 +68,7 @@ resource "aws_ecs_service" "service" {
   enable_execute_command = true
   launch_type            = var.capacity_provider_strategy == null ? var.launch_type : null
 
+  # add service discovery connection TODO
 
   dynamic "capacity_provider_strategy" {
     for_each = var.capacity_provider_strategy
