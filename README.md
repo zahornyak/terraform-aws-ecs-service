@@ -36,7 +36,7 @@ module "ecs_service" {
       service_domain   = "api-test"
       connect_to_lb    = true
       container_image  = "nginx:latest"
-      container_name   = "proxy"
+      container_name   = "backend"
       container_cpu    = 256
       container_memory = 256
       containerPort    = 80
@@ -88,6 +88,7 @@ module "ecs_service" {
         }
       ]
     }
+    
     backend = {
       container_image  = "nginx:latest"
       container_name   = "backend"
@@ -114,6 +115,7 @@ module "ecs_service" {
         }
       ]
     }
+    
     admin = {
       service_domain   = "api-worker"
       connect_to_lb    = true
@@ -178,6 +180,7 @@ module "ecs_service" {
         }
       ]
     }
+    
     backend = {
       container_image      = "nginx:latest"
       container_name       = "backend"
