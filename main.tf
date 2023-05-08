@@ -160,10 +160,10 @@ resource "aws_lb_target_group" "service" {
 
   name                 = "lb-${var.environment}-${replace(each.value.container_name, "_", "")}"
   port                 = each.value.containerPort
-  protocol             = each.value.tg_protocol != null ? each.value.tg_protocol : var.tg_protocol
-  target_type          = each.value.tg_target_type != null ? each.value.tg_target_type : var.tg_target_type
+  protocol             = lookup(each.value, "tg_protocol", null) != null ? lookup(each.value, "tg_protocol", null) : var.tg_protocol
+  target_type          = lookup(each.value, "tg_target_type", null) != null ? lookup(each.value, "tg_target_type", null) : var.tg_target_type
   vpc_id               = var.vpc_id
-  deregistration_delay = each.value.tg_target_type != null ? each.value.tg_target_type : var.deregistration_delay
+  deregistration_delay = lookup(each.value, "deregistration_delay", null) != null ? lookup(each.value, "deregistration_delay", null) : var.deregistration_delay
   health_check {
     enabled             = try(var.health_check.enabled, null)
     interval            = try(var.health_check.interval, null)
