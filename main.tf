@@ -108,12 +108,12 @@ resource "aws_ecs_service" "service" {
   }
 
   dynamic "load_balancer" {
-    for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true }
+    for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true }
 
     content {
       target_group_arn = aws_lb_target_group.service[load_balancer.key].arn
       container_name   = load_balancer.value.container_name
-      container_port   = load_balancer.value.containerPort
+      container_port   = load_balancer.value.containerPort != null ? load_balancer.value.containerPort : load_balancer.value.port_mappings.containerPort
     }
   }
 
@@ -156,10 +156,10 @@ module "acm" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_alb, false) == true && try(v.containerPort.port_mappings, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null}
 
   name                 = "lb-${var.environment}-${replace(each.value.container_name, "_", "")}"
-  port                 = each.value.containerPort
+  port                 = lookup(each.value, "containerPort", null) != null ? lookup(each.value, "containerPort", null) : lookup(each.value.port_mappings, "containerPort", null)
   protocol             = lookup(each.value, "tg_protocol", null) != null ? lookup(each.value, "tg_protocol", null) : var.tg_protocol
   target_type          = lookup(each.value, "tg_target_type", null) != null ? lookup(each.value, "tg_target_type", null) : var.tg_target_type
   vpc_id               = var.vpc_id
@@ -176,11 +176,11 @@ resource "aws_lb_target_group" "service" {
 }
 
 resource "aws_lb_listener" "listener_nlb" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_nlb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if  try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null}
 
   load_balancer_arn = var.lb_arn
 
-  port     = each.value.containerPort
+  port     = lookup(each.value, "containerPort", null) != null ? lookup(each.value, "containerPort", null) : lookup(each.value.port_mappings, "containerPort", null)
   protocol = lookup(each.value, "protocol", "tcp")
 
   default_action {
@@ -309,7 +309,7 @@ module "records_lb" {
       name = each.value.service_domain
       type = "A"
       alias = {
-        name    = var.lb_dns_name == null ? data.aws_lb.this[each.value].dns_name : var.lb_dns_name
+        name    = var.lb_dns_name == null ? data.aws_lb.this[each.key].dns_name : var.lb_dns_name
         zone_id = var.route_53_zone_id
       }
     }

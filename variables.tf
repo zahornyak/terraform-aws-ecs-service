@@ -21,7 +21,7 @@ variable "container_definitions" {
 
 variable "requires_compatibilities" {
   type        = list(string)
-  default     = ["FARGATE"]
+  default     = ["FARGATE", "EC2"]
   description = "Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE_SPOT', 'EC2' etc."
 }
 
