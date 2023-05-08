@@ -301,7 +301,7 @@ module "records_lb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true}
 
   zone_id = var.route_53_zone_id
 
