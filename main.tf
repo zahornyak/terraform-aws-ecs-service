@@ -108,7 +108,7 @@ resource "aws_ecs_service" "service" {
   }
 
   dynamic "load_balancer" {
-    for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+    for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true }
 
     content {
       target_group_arn = aws_lb_target_group.service[load_balancer.key].arn
@@ -135,7 +135,7 @@ resource "aws_cloudwatch_log_group" "service_logs" {
 }
 
 resource "aws_lb_listener_certificate" "this" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true && var.create_ssl == true }
 
   listener_arn    = var.lb_listener_arn
   certificate_arn = module.acm[each.key].acm_certificate_arn
@@ -144,7 +144,7 @@ resource "aws_lb_listener_certificate" "this" {
 module "acm" {
   source   = "terraform-aws-modules/acm/aws"
   version  = "~> 3.3"
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true && var.create_ssl == true }
 
 
   domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[0].name : var.route_53_zone_name}"
@@ -156,14 +156,14 @@ module "acm" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true }
 
   name                 = "lb-${var.environment}-${replace(each.value.container_name, "_", "")}"
   port                 = each.value.containerPort
-  protocol             = var.tg_protocol
-  target_type          = var.tg_target_type
+  protocol             = each.value.tg_protocol != null ? each.value.tg_protocol : var.tg_protocol
+  target_type          = each.value.tg_target_type != null ? each.value.tg_target_type : var.tg_target_type
   vpc_id               = var.vpc_id
-  deregistration_delay = var.deregistration_delay
+  deregistration_delay = each.value.tg_target_type != null ? each.value.tg_target_type : var.deregistration_delay
   health_check {
     enabled             = try(var.health_check.enabled, null)
     interval            = try(var.health_check.interval, null)
@@ -175,9 +175,23 @@ resource "aws_lb_target_group" "service" {
   }
 }
 
+resource "aws_lb_listener" "listener_nlb" {
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_nlb, false) == true }
+
+  load_balancer_arn = var.lb_arn
+
+  port     = each.value.containerPort
+  protocol = each.value.protocol
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service[each.key].arn
+  }
+}
+
 resource "aws_lb_listener_rule" "service" {
 
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true }
 
 
   listener_arn = var.lb_listener_arn
@@ -287,7 +301,7 @@ module "records_lb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true }
 
   zone_id = var.route_53_zone_id
 
