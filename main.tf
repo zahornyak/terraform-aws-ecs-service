@@ -83,16 +83,16 @@ resource "aws_ecs_service" "service" {
   dynamic "ordered_placement_strategy" {
     for_each = var.ordered_placement_strategy
     content {
-      type  = try(ordered_placement_strategy.value.type, null)
-      field = try(ordered_placement_strategy.value.field, null)
+      type  = try(ordered_placement_strategy.value.type, "binpack")
+      field = try(ordered_placement_strategy.value.field, "cpu")
     }
   }
 
   dynamic "placement_constraints" {
     for_each = var.placement_constraints
     content {
-      type       = try(placement_constraints.value.type, null)
-      expression = try(placement_constraints.value.expression, null)
+      type       = try(placement_constraints.value.type, "memberOf")
+      expression = try(placement_constraints.value.expression, "attribute:ecs.instance-type == ${var.instance_type}")
     }
   }
 
@@ -277,8 +277,7 @@ module "ecs_task_role" {
 
 
   custom_role_policy_arns = concat([
-    module.ecs_task_policy.arn,
-    "arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess"
+    module.ecs_task_policy.arn
   ], var.task_role_policy_arns)
 
 }
@@ -382,6 +381,200 @@ resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
 
     disable_scale_in = true
   }
+}
+
+
+# EC2 type
+
+data "aws_ami" "ami_ecs" {
+  count = var.instance_type != null ? 1 : 0
+
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-ecs-hvm-2.0*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+}
+
+data "template_file" "user_data" {
+  count = var.instance_type != null ? 1 : 0
+
+  template = file("${path.module}/files/user_data.sh")
+
+  vars = {
+    cluster = var.cluster_name
+  }
+}
+
+resource "aws_launch_template" "template" {
+  count = var.instance_type != null ? 1 : 0
+
+  name                   = var.service_name
+  image_id               = data.aws_ami.ami_ecs[0].id
+  instance_type          = var.instance_type
+  vpc_security_group_ids = concat(
+    values(module.service_container_sg)[*].security_group_id
+    , var.security_groups)
+
+  user_data = base64encode(data.template_file.user_data[0].rendered)
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ecs_instance_profile[0].name
+  }
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    #no_device
+    ebs {
+      volume_size           = 30
+      volume_type           = "gp3"
+      iops                  = 3000
+      delete_on_termination = "true"
+      encrypted             = "false"
+    }
+  }
+}
+
+resource "aws_autoscaling_group" "ecs_asg" {
+  count = var.instance_type != null ? 1 : 0
+
+  name                  = var.service_name
+  vpc_zone_identifier   = var.service_subnets
+  max_size              = var.ec2_max
+  min_size              = var.ec2_min
+  desired_capacity      = var.ec2_min
+  termination_policies  = ["OldestInstance"]
+  protect_from_scale_in = true
+
+  enabled_metrics = ["GroupTerminatingInstances", "GroupMaxSize", "GroupPendingInstances", "GroupInServiceInstances", "GroupMinSize", "GroupTotalInstances"]
+
+  launch_template {
+    id      = aws_launch_template.template[0].id
+    version = "$Latest"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes        = [desired_capacity]
+  }
+
+}
+
+resource "aws_ecs_capacity_provider" "main_ec2_autoscaling" {
+  count = var.instance_type != null && var.capacity_provider == true ? 1 : 0
+
+  name = "EC2_${upper(var.service_name)}"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = aws_autoscaling_group.ecs_asg[0].arn
+    managed_termination_protection = var.managed_termination_protection
+
+    managed_scaling {
+      maximum_scaling_step_size = var.maximum_scaling_step_size
+      status                    = var.managed_scaling_status
+      target_capacity           = var.target_capacity
+    }
+  }
+}
+
+resource "aws_iam_instance_profile" "ecs_instance_profile" {
+  count = var.instance_type != null ? 1 : 0
+
+  name = "${var.service_name}_instance_profile"
+  role = aws_iam_role.ecsInstanceRole[0].name
+}
+
+resource "aws_iam_role" "ecsInstanceRole" {
+  count = var.instance_type != null ? 1 : 0
+
+  name = "${var.service_name}_ecsInstanceRole"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+
+  managed_policy_arns = var.own_ec2_role_managed_policy_arns
+
+}
+
+resource "aws_iam_role_policy_attachment" "custom-attach" {
+  count = var.instance_type != null && var.own_ec2_role_managed_policy_arns == null ? 1 : 0
+
+
+  role       = aws_iam_role.ecsInstanceRole[0].name
+  policy_arn = aws_iam_policy.ecsInstancerolePolicy[0].arn
+}
+
+resource "aws_iam_role_policy_attachment" "ssm-attach" {
+  count = var.instance_type != null && var.own_ec2_role_managed_policy_arns == null ? 1 : 0
+
+
+  role       = aws_iam_role.ecsInstanceRole[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_policy" "ecsInstancerolePolicy" {
+  count = var.instance_type != null ? 1 : 0
+
+  name = "${var.service_name}_EcsInstancerolePolicy"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:CreateCluster",
+        "ecs:DeregisterContainerInstance",
+        "ecs:DiscoverPollEndpoint",
+        "ecs:Poll",
+        "ecs:RegisterContainerInstance",
+        "ecs:StartTelemetrySession",
+        "ecs:Submit*",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+
+
 }
 
 

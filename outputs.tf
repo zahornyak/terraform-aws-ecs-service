@@ -73,3 +73,8 @@ output "service_container_sg_ids" {
   description = "service container sg ids"
 }
 
+output "aws_ecs_capacity_provider" {
+  value       = try(aws_ecs_capacity_provider.main_ec2_autoscaling[0].name, null)
+  description = "you should add this capacity provider to your cluster"
+}
+

@@ -257,6 +257,56 @@ variable "placement_constraints" {
   default     = {}
 }
 
+variable "instance_type" {
+  description = "type of EC2 instance for service"
+  type        = string
+  default     = null
+}
 
+variable "ec2_max" {
+  description = "max ec2 instances"
+  type        = number
+  default     = null
+}
 
+variable "ec2_min" {
+  description = "min ec2 instances"
+  type        = number
+  default     = null
+}
 
+variable "managed_termination_protection" {
+  default     = "ENABLED"
+  description = "managed_termination_protection"
+  type        = string
+}
+
+variable "maximum_scaling_step_size" {
+  default     = 10
+  description = "maximum_scaling_step_size"
+  type        = number
+}
+
+variable "managed_scaling_status" {
+  default     = "ENABLED"
+  description = "managed_scaling_status"
+  type        = string
+}
+
+variable "target_capacity" {
+  default     = 99
+  description = "target_capacity"
+  type        = number
+}
+
+variable "own_ec2_role_managed_policy_arns" {
+  default     = null
+  description = "your own policies for instance role"
+  type        = any
+}
+
+variable "capacity_provider" {
+  default     = true
+  description = "capacity_provider setting. if you want to create capacity provider for your service"
+  type        = bool
+}
