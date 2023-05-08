@@ -277,8 +277,7 @@ module "ecs_task_role" {
 
 
   custom_role_policy_arns = concat([
-    module.ecs_task_policy.arn,
-    "arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess"
+    module.ecs_task_policy.arn
   ], var.task_role_policy_arns)
 
 }
