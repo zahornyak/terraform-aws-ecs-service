@@ -181,7 +181,7 @@ resource "aws_lb_listener" "listener_nlb" {
   load_balancer_arn = var.lb_arn
 
   port     = each.value.containerPort
-  protocol = each.value.protocol
+  protocol = lookup(each.value, "protocol", "tcp")
 
   default_action {
     type             = "forward"

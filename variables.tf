@@ -182,13 +182,13 @@ variable "lb_dns_name" {
 variable "min_service_tasks" {
   description = "Minimum service tasks."
   type        = number
-  default     = null
+  default     = 1
 }
 
 variable "max_service_tasks" {
   description = "Maximum service tasks."
   type        = number
-  default     = null
+  default     = 1
 }
 
 variable "cpu_scaling_target_value" {
