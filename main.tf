@@ -426,12 +426,12 @@ data "template_file" "user_data" {
 resource "aws_launch_template" "template" {
   count = var.instance_type != null ? 1 : 0
 
-  name                   = var.service_name
-  image_id               = data.aws_ami.ami_ecs[0].id
-  instance_type          = var.instance_type
+  name          = var.service_name
+  image_id      = data.aws_ami.ami_ecs[0].id
+  instance_type = var.instance_type
   vpc_security_group_ids = concat(
     values(module.service_container_sg)[*].security_group_id
-    , var.security_groups)
+  , var.security_groups)
 
   user_data = base64encode(data.template_file.user_data[0].rendered)
 
