@@ -14,8 +14,32 @@ variable "service_memory" {
 }
 
 variable "container_definitions" {
-  type        = any
-  default     = {}
+  type = any
+  default = { proxy = {
+    #      service_domain   = "api-test"
+    #      connect_to_lb    = true
+    container_image  = "nginx:latest"
+    container_name   = "proxy"
+    container_cpu    = 256
+    container_memory = 256
+    containerPort    = 80
+    port_mappings = [{
+      containerPort = 90
+      protocol      = "tcp"
+      hostPort      = null
+      },
+      {
+        containerPort = 97
+        protocol      = "tcp"
+        hostPort      = null
+    }]
+    environment = [
+      {
+        "name"  = "foo"
+        "value" = "bar"
+      }
+    ]
+  } }
   description = "Custom container definitions."
 }
 
@@ -309,4 +333,10 @@ variable "capacity_provider" {
   default     = true
   description = "capacity_provider setting. if you want to create capacity provider for your service"
   type        = bool
+}
+
+variable "parameter_prefix" {
+  default     = null
+  description = "prefix for parameter store parameters"
+  type        = string
 }

@@ -40,9 +40,34 @@ module "service_container_definition" {
   environment_files = lookup(each.value, "environment_files", null)
   environment       = lookup(each.value, "environment", null)
 
-  secrets = lookup(each.value, "secrets", null)
+  secrets = lookup(each.value, "secrets", null) == null ? local.env_ssm_vars : lookup(each.value, "secrets", null)
 
 }
+
+locals {
+  env_ssm_vars = [
+    for k, v in module.env_variables.parameters_arns : {
+      name      = k
+      valueFrom = v
+    }
+  ]
+  envs = {
+    for_each = var.container_definitions
+  }
+}
+
+module "env_variables" {
+  source  = "zahornyak/multiple-ssm-parameters/aws"
+  version = "0.0.8"
+
+  parameter_prefix = var.parameter_prefix != null ? var.parameter_prefix : "/${var.environment}/${var.service_name}/"
+
+  parameters = var.environment
+
+  file_path = var.env_file_path
+}
+
+
 
 data "aws_region" "current" {}
 
@@ -156,7 +181,7 @@ module "acm" {
 
 resource "aws_lb_target_group" "service" {
   # if listener arn defined - create target group
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_alb, false) == true && try(v.containerPort.port_mappings, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null}
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_alb, false) == true && try(v.containerPort.port_mappings, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null }
 
   name                 = "lb-${var.environment}-${replace(each.value.container_name, "_", "")}"
   port                 = lookup(each.value, "containerPort", null) != null ? lookup(each.value, "containerPort", null) : lookup(each.value.port_mappings, "containerPort", null)
@@ -176,7 +201,7 @@ resource "aws_lb_target_group" "service" {
 }
 
 resource "aws_lb_listener" "listener_nlb" {
-  for_each = { for k, v in var.container_definitions : k => v if  try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null}
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_nlb, false) == true && try(v.containerPort, null) != null || try(v.connect_to_nlb, false) == true && try(v.containerPort.port_mappings, null) != null }
 
   load_balancer_arn = var.lb_arn
 
@@ -223,7 +248,7 @@ data "aws_route53_zone" "this" {
 
 data "aws_lb" "this" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.lb_arn, null) != null }
-  arn = var.lb_arn
+  arn      = var.lb_arn
 }
 
 
@@ -300,7 +325,7 @@ module "records_lb" {
   source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
   version = "~> 2.3"
 
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true}
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_alb, false) == true || try(v.connect_to_nlb, false) == true }
 
   zone_id = var.route_53_zone_id
 
@@ -342,6 +367,80 @@ module "service_container_sg" {
   egress_cidr_blocks = ["0.0.0.0/0"]
 
 }
+
+resource "aws_security_group" "service_container_sg_mapping" {
+  #  for_each = { for k, v in var.container_definitions : k => v }
+
+  name_prefix = "${var.environment}-service-container-sg"
+  description = "Security group for ${var.environment} Container"
+  vpc_id      = var.vpc_id
+
+  dynamic "ingress" {
+    for_each = { for k, v in var.container_definitions : k => v.port_mappings if try(v.port_mappings, null) != null }
+    content {
+      description = "${var.service_name} container service port"
+
+      from_port   = ingress.value.containerPort
+      to_port     = ingress.value.containerPort
+      protocol    = ingress.value.protocol
+      cidr_blocks = [var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block]
+    }
+  }
+
+  #  dynamic "ingress" {
+  #    for_each = { for k, v in var.container_definitions : k => v}
+  #    content {
+  #      description = "${var.service_name} container service port"
+  #
+  #      from_port   = ingress.value.containerPort
+  #      to_port     = ingress.value.containerPort
+  #      protocol    = "tcp"
+  #      cidr_blocks = [var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block]
+  #    }
+  #  }
+  #  ingress {
+  #    description = "${var.service_name} container service port"
+  #
+  #    from_port        = each.value.containerPort
+  #    to_port          = each.value.containerPort
+  #    protocol         = each.value.protocol
+  #    cidr_blocks      = [var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block]
+  #  }
+
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+}
+
+#module "service_container_sg_mapping" {
+#  source  = "registry.terraform.io/terraform-aws-modules/security-group/aws"
+#  version = "~> 4.3"
+#
+#  for_each = { for k, v in var.container_definitions : k => v.port_mappings if try(v.port_mappings, null) != null }
+#
+#  use_name_prefix = true
+#  name            = "${var.environment}-service-container-sg"
+#  description     = "Security group for ${var.environment} Container"
+#  vpc_id          = var.vpc_id
+#
+#  ingress_with_cidr_blocks = [
+#    {
+#      from_port   = each.value[0].containerPort
+#      to_port     = each.value[0].containerPort
+#      protocol    = each.value[0].protocol
+#      description = "${var.service_name} container service port"
+#      cidr_blocks = var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block
+#  }]
+#
+#  egress_rules       = ["all-all"]
+#  egress_cidr_blocks = ["0.0.0.0/0"]
+#
+#}
 
 # add autoscaling TODO
 resource "aws_appautoscaling_target" "service_scaling" {
