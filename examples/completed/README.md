@@ -33,8 +33,11 @@ module "ecs_service" {
           "value" = "bar"
         }
       ]
+      ssm_env_file = "./.env"
     }
   }
+
+
 
   service_memory = 1024
   service_cpu    = 512

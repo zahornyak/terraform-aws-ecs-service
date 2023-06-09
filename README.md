@@ -214,6 +214,69 @@ module "ecs_service" {
 }
 ```
 
+
+### Example of using environment valiables for containers(using ssm_secrets which creates ssm parameters and puts them into container definition)
+```hcl
+module "ecs-service" {
+  source  = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+  container_definitions = {
+    proxy = {
+      container_image  = "nginx:latest"
+      container_name   = "proxy"
+      container_cpu    = 256
+      container_memory = 256
+      containerPort    = 80
+      environment      = [
+        {
+          "name"  = "foo"
+          "value" = "bar"
+        }
+      ]
+      ssm_secrets = {
+        DEBUG = {
+          value = "true"
+        }
+      }
+    }
+  }
+}
+```
+
+### Example of using environment valiables for containers(using ssm_env_file which parses and creates ssm parameters and puts them into container definition)
+```hcl
+module "ecs-service" {
+  source  = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+  container_definitions = {
+    proxy = {
+      container_image  = "nginx:latest"
+      container_name   = "proxy"
+      container_cpu    = 256
+      container_memory = 256
+      containerPort    = 80
+      environment      = [
+        {
+          "name"  = "foo"
+          "value" = "bar"
+        }
+      ]
+      ssm_env_file = "./env"
+    }
+  }
+}
+```
+\
+.env example
+```commandline
+LOG_LEVEL=verbose
+LOG_TARGET=console
+LOG_FORMAT=json
+
+CRONJOB_ENABLED=true
+DEPLOYMENT=develop
+```
+
 ### Autoscaling with default scaling values
 ```hcl
 module "ecs-service" {

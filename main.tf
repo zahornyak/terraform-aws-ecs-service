@@ -40,12 +40,27 @@ module "service_container_definition" {
   environment_files = lookup(each.value, "environment_files", null)
   environment       = lookup(each.value, "environment", null)
 
-  secrets = lookup(each.value, "secrets", null)
+  secrets = lookup(each.value, "ssm_secrets", null) != null || lookup(each.value, "ssm_env_file", null) != null ? [
+    for k, v in module.env_variables[each.key].parameters_arns :  {
+      name      = k
+      valueFrom = v
+    }
+  ] : lookup(each.value, "secrets", null)
 
 }
 
-data "aws_region" "current" {}
+#locals {
+#  container_def_keys = keys(var.container_definitions)
+#  env_ssm_vars = [
+#    for k, v in module.env_variables.parameters_arns : {
+#      name      = k
+#      valueFrom = v
+#    }
+#  ]
+#}
 
+
+data "aws_region" "current" {}
 
 # task definition for service
 resource "aws_ecs_task_definition" "service" {
@@ -381,6 +396,29 @@ resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
 
     disable_scale_in = true
   }
+}
+
+## SSM
+#locals {
+#  env_ssm_vars = { for k, v in var.container_definitions : k => v if try(v.ssm_secrets, null) != null || try(v.ssm_env_file, null) != null } != {} ? [
+#    for k, v in module.env_variables.parameters_arns : {
+#      name      = k
+#      valueFrom = v
+#    }
+#  ] : null
+#}
+
+module "env_variables" {
+  source  = "zahornyak/multiple-ssm-parameters/aws"
+  version = "0.0.9"
+
+  for_each = { for k, v in var.container_definitions : k => v if try(v.ssm_secrets, null) != null || try(v.ssm_env_file, null) != null }
+
+  parameter_prefix = var.parameter_prefix != null ? var.parameter_prefix : "/${var.environment}/${var.service_name}/${lookup(each.value, "container_name", null)}/"
+
+  parameters = lookup(each.value, "ssm_secrets", {})
+
+  file_path = lookup(each.value, "ssm_env_file", null)
 }
 
 
