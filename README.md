@@ -307,9 +307,7 @@ module "ecs-service" {
   cpu_scaling_target_value = 40
   cpu_scale_in_cooldown    = 350
   cpu_scale_out_cooldown   = 200
-
-  memory_scaling = false
-#  cpu_scaling    = false
+  
 }
 ```
 
