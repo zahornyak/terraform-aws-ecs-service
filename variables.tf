@@ -259,8 +259,8 @@ variable "placement_constraints" {
 
 variable "parameter_prefix" {
   description = "prefix for parameter store parameter. For example '/develop/service/'. So parameter 'DEBUG' will have '/develop/service/DEBUG' name on the parameter store"
-  type = string
-  default = null
+  type        = string
+  default     = null
 }
 
 

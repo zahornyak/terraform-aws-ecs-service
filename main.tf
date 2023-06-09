@@ -41,7 +41,7 @@ module "service_container_definition" {
   environment       = lookup(each.value, "environment", null)
 
   secrets = lookup(each.value, "ssm_secrets", null) != null || lookup(each.value, "ssm_env_file", null) != null ? [
-    for k, v in module.env_variables[each.key].parameters_arns :  {
+    for k, v in module.env_variables[each.key].parameters_arns : {
       name      = k
       valueFrom = v
     }
