@@ -194,49 +194,37 @@ variable "max_service_tasks" {
 variable "cpu_scaling_target_value" {
   description = "cpu_scaling target_value"
   type        = number
-  default     = 30
+  default     = null
 }
 
 variable "cpu_scale_in_cooldown" {
   description = "cpu scale_in_cooldown"
   type        = number
-  default     = 300
+  default     = null
 }
 
 variable "cpu_scale_out_cooldown" {
   description = "cpu scale_out_cooldown"
   type        = number
-  default     = 120
+  default     = null
 }
 
 variable "memory_scaling_target_value" {
   description = "memory scaling_target_value"
   type        = number
-  default     = 60
+  default     = null
 }
 
 variable "memory_scale_in_cooldown" {
   description = "memory scale_in_cooldown"
   type        = number
-  default     = 300
+  default     = null
 }
 
 variable "memory_scale_out_cooldown" {
   description = "memory scale_out_cooldown"
   type        = number
-  default     = 120
-}
-
-variable "memory_scaling" {
-  description = "if true - creates memory scaling"
-  type        = bool
-  default     = true
-}
-
-variable "cpu_scaling" {
-  description = "if true - creates cpu scaling"
-  type        = bool
-  default     = true
+  default     = null
 }
 
 variable "capacity_provider_strategy" {

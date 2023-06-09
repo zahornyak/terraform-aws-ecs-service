@@ -162,7 +162,7 @@ module "acm" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
-  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[0].name : var.route_53_zone_name}"
+  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this.name : var.route_53_zone_name}"
   zone_id     = var.route_53_zone_id
 
   wait_for_validation = true
@@ -205,7 +205,7 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     host_header {
-      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[0].name : var.route_53_zone_name}"]
+      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this.name : var.route_53_zone_name}"]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -213,13 +213,11 @@ resource "aws_lb_listener_rule" "service" {
 
 
 data "aws_vpc" "this" {
-  count = var.vpc_id != null ? 1 : 0
-  id    = var.vpc_id
+  id = try(var.vpc_id)
 }
 
 data "aws_route53_zone" "this" {
-  count   = var.route_53_zone_id != null ? 1 : 0
-  zone_id = var.route_53_zone_id
+  zone_id = try(var.route_53_zone_id)
 }
 
 data "aws_lb" "this" {
@@ -298,25 +296,18 @@ module "ecs_task_role" {
 }
 
 
-module "records_lb" {
-  source  = "registry.terraform.io/terraform-aws-modules/route53/aws//modules/records"
-  version = "~> 2.3"
-
+resource "aws_route53_record" "lb_records" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
   zone_id = var.route_53_zone_id
+  name    = each.value.service_domain
+  type    = "A"
 
-  records = [
-    {
-      name = each.value.service_domain
-      type = "A"
-      alias = {
-        name    = var.lb_dns_name == null ? data.aws_lb.this[0].dns_name : var.lb_dns_name
-        zone_id = var.route_53_zone_id
-      }
-    }
-  ]
-
+  alias {
+    name                   = var.lb_dns_name == null ? data.aws_lb.this[0].dns_name : var.lb_dns_name
+    zone_id                = var.route_53_zone_id
+    evaluate_target_health = true
+  }
 }
 
 
@@ -337,7 +328,7 @@ module "service_container_sg" {
       to_port     = each.value.containerPort
       protocol    = "tcp"
       description = "${var.service_name} ${each.value.container_name} container service port"
-      cidr_blocks = var.vpc_cidr_block == null ? data.aws_vpc.this[0].cidr_block : var.vpc_cidr_block
+      cidr_blocks = var.vpc_cidr_block == null ? data.aws_vpc.this.cidr_block : var.vpc_cidr_block
   }]
 
   egress_rules       = ["all-all"]
@@ -347,7 +338,7 @@ module "service_container_sg" {
 
 # add autoscaling TODO
 resource "aws_appautoscaling_target" "service_scaling" {
-  count = var.max_service_tasks != null || var.max_service_tasks != null || var.cpu_scaling_target_value != null || var.cpu_scale_in_cooldown != null || var.cpu_scale_out_cooldown != null || var.memory_scaling_target_value != null || var.memory_scale_in_cooldown != null || var.memory_scale_out_cooldown != null ? 1 : 0
+  count = var.max_service_tasks != null || var.min_service_tasks != null ? 1 : 0
 
   max_capacity       = var.max_service_tasks
   min_capacity       = var.min_service_tasks
@@ -357,7 +348,7 @@ resource "aws_appautoscaling_target" "service_scaling" {
 }
 
 resource "aws_appautoscaling_policy" "target_tracking_scaling_cpu_service" {
-  count = var.max_service_tasks == null && var.max_service_tasks == null && var.cpu_scaling_target_value == null && var.cpu_scale_in_cooldown == null && var.cpu_scale_out_cooldown == null || var.cpu_scaling == false ? 0 : 1
+  count = var.cpu_scaling_target_value != null || var.cpu_scale_in_cooldown != null || var.cpu_scale_out_cooldown != null ? 1 : 0
 
   name               = "TargetTrackingScaling_cpu_${var.environment}_${var.service_name}_service"
   policy_type        = "TargetTrackingScaling"
@@ -377,7 +368,7 @@ resource "aws_appautoscaling_policy" "target_tracking_scaling_cpu_service" {
 }
 
 resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
-  count = var.max_service_tasks == null && var.memory_scaling_target_value == null && var.memory_scale_in_cooldown == null && var.memory_scale_out_cooldown == null || var.memory_scaling == false ? 0 : 1
+  count = var.memory_scaling_target_value != null || var.memory_scale_in_cooldown != null || var.memory_scale_out_cooldown != null ? 1 : 0
 
   name               = "TargetTrackingScaling_memory_${var.environment}_${var.service_name}_service"
   policy_type        = "TargetTrackingScaling"

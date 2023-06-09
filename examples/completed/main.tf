@@ -1,5 +1,7 @@
 module "ecs_service" {
-  source = "zahornyak/ecs-service/aws"
+  #  source = "zahornyak/ecs-service/aws"
+  #  version = "0.1.8"
+  source = "../../"
 
   environment     = "production"
   vpc_id          = aws_vpc.main.id

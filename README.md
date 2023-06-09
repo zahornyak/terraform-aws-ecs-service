@@ -277,17 +277,7 @@ CRONJOB_ENABLED=true
 DEPLOYMENT=develop
 ```
 
-### Autoscaling with default scaling values
-```hcl
-module "ecs-service" {
-  source  = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
-
-  min_service_tasks = 1
-  max_service_tasks = 6
-}
-```
-### Autoscaling with custom scaling values
+### Autoscaling with scaling values
 ```hcl
 module "ecs-service" {
   source = "zahornyak/ecs-service/aws"
@@ -305,7 +295,7 @@ module "ecs-service" {
   memory_scale_out_cooldown   = 300
 }
 ```
-### Autoscaling with custom scaling values (no memory or cpu scaling)
+### Autoscaling with scaling values (no memory or cpu scaling)
 ```hcl
 module "ecs-service" {
   source = "zahornyak/ecs-service/aws"
@@ -361,7 +351,7 @@ module "ecs-service" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.4 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.37 |
 
 ## Providers
@@ -379,7 +369,6 @@ module "ecs-service" {
 | <a name="module_ecs_task_policy"></a> [ecs\_task\_policy](#module\_ecs\_task\_policy) | terraform-aws-modules/iam/aws//modules/iam-policy | ~> 4.4 |
 | <a name="module_ecs_task_role"></a> [ecs\_task\_role](#module\_ecs\_task\_role) | terraform-aws-modules/iam/aws//modules/iam-assumable-role | ~> 4.4 |
 | <a name="module_env_variables"></a> [env\_variables](#module\_env\_variables) | zahornyak/multiple-ssm-parameters/aws | 0.0.9 |
-| <a name="module_records_lb"></a> [records\_lb](#module\_records\_lb) | registry.terraform.io/terraform-aws-modules/route53/aws//modules/records | ~> 2.3 |
 | <a name="module_service_container_definition"></a> [service\_container\_definition](#module\_service\_container\_definition) | registry.terraform.io/cloudposse/ecs-container-definition/aws | ~> 0.58 |
 | <a name="module_service_container_sg"></a> [service\_container\_sg](#module\_service\_container\_sg) | registry.terraform.io/terraform-aws-modules/security-group/aws | ~> 4.3 |
 
@@ -396,6 +385,7 @@ module "ecs-service" {
 | [aws_lb_listener_certificate.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
+| [aws_route53_record.lb_records](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
 | [aws_iam_policy_document.ecs_task_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_lb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
@@ -410,10 +400,9 @@ module "ecs-service" {
 | <a name="input_capacity_provider_strategy"></a> [capacity\_provider\_strategy](#input\_capacity\_provider\_strategy) | capacity\_provider\_strategy | `any` | `{}` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. | `any` | `{}` | no |
-| <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `300` | no |
-| <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `120` | no |
-| <a name="input_cpu_scaling"></a> [cpu\_scaling](#input\_cpu\_scaling) | if true - creates cpu scaling | `bool` | `true` | no |
-| <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `30` | no |
+| <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `null` | no |
+| <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `null` | no |
+| <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `null` | no |
 | <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | defines if create ssl for services domains | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
@@ -427,10 +416,9 @@ module "ecs-service" {
 | <a name="input_lb_dns_name"></a> [lb\_dns\_name](#input\_lb\_dns\_name) | Load balancer dns name. Use only if you dont have previously created Load Balancer | `string` | `null` | no |
 | <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
 | <a name="input_max_service_tasks"></a> [max\_service\_tasks](#input\_max\_service\_tasks) | Maximum service tasks. | `number` | `null` | no |
-| <a name="input_memory_scale_in_cooldown"></a> [memory\_scale\_in\_cooldown](#input\_memory\_scale\_in\_cooldown) | memory scale\_in\_cooldown | `number` | `300` | no |
-| <a name="input_memory_scale_out_cooldown"></a> [memory\_scale\_out\_cooldown](#input\_memory\_scale\_out\_cooldown) | memory scale\_out\_cooldown | `number` | `120` | no |
-| <a name="input_memory_scaling"></a> [memory\_scaling](#input\_memory\_scaling) | if true - creates memory scaling | `bool` | `true` | no |
-| <a name="input_memory_scaling_target_value"></a> [memory\_scaling\_target\_value](#input\_memory\_scaling\_target\_value) | memory scaling\_target\_value | `number` | `60` | no |
+| <a name="input_memory_scale_in_cooldown"></a> [memory\_scale\_in\_cooldown](#input\_memory\_scale\_in\_cooldown) | memory scale\_in\_cooldown | `number` | `null` | no |
+| <a name="input_memory_scale_out_cooldown"></a> [memory\_scale\_out\_cooldown](#input\_memory\_scale\_out\_cooldown) | memory scale\_out\_cooldown | `number` | `null` | no |
+| <a name="input_memory_scaling_target_value"></a> [memory\_scaling\_target\_value](#input\_memory\_scaling\_target\_value) | memory scaling\_target\_value | `number` | `null` | no |
 | <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | `null` | no |
 | <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
 | <a name="input_ordered_placement_strategy"></a> [ordered\_placement\_strategy](#input\_ordered\_placement\_strategy) | ordered\_placement\_strategy | `any` | `{}` | no |

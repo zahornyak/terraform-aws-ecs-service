@@ -64,7 +64,7 @@ output "ecs_task_role_arn" {
 }
 
 output "records_lb_names" {
-  value       = try(module.records_lb.route53_record_name, null)
+  value       = try(aws_route53_record.lb_records[*].name, null)
   description = "load balancers records names"
 }
 
