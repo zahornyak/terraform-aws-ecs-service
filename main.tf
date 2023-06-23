@@ -59,7 +59,7 @@ module "service_container_definition" {
 #  ]
 #}
 
-
+data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 # task definition for service
@@ -251,7 +251,28 @@ module "ecs_task_execution_role" {
 
   custom_role_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    module.ecs_task_exec_policy.arn
   ]
+}
+
+module "ecs_task_exec_policy" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
+  version = "~> 4.4"
+
+  name = "${var.environment}-${var.service_name}EcsTaskExecPolicy"
+
+  policy = data.aws_iam_policy_document.ecs_task_exec_policy.json
+}
+
+data "aws_iam_policy_document" "ecs_task_exec_policy" {
+  statement {
+    actions = [
+      "ssm:GetParameters"
+    ]
+    resources = try(formatlist("arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}-app-${var.service_name}/%s",
+      keys(module.env_variables.parameters_arns)
+    ), ["arn:aws:ssm:*:*:parameter/null"])
+  }
 }
 
 module "ecs_task_policy" {

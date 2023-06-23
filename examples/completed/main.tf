@@ -51,8 +51,14 @@ resource "aws_subnet" "main" {
   cidr_block = "10.0.1.0/24"
 }
 
+resource "aws_subnet" "main1" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.2.0/24"
+}
+
+
 resource "aws_route53_zone" "primary" {
-  name = "example.com"
+  name = "zahornyak.com"
 }
 
 resource "aws_lb" "main" {
@@ -60,6 +66,7 @@ resource "aws_lb" "main" {
   load_balancer_type = "application"
 
   # Some configs ..
+  subnets = [aws_subnet.main.arn, aws_subnet.main1.arn]
 
 }
 
