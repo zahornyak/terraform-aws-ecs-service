@@ -251,6 +251,12 @@ variable "parameter_prefix" {
   default     = null
 }
 
+variable "deployment_circuit_breaker" {
+  description = "deployment_circuit_breaker configuration"
+  type        = any
+  default     = {}
+}
+
 
 
 

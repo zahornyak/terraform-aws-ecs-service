@@ -111,7 +111,13 @@ resource "aws_ecs_service" "service" {
     }
   }
 
-
+  dynamic "deployment_circuit_breaker" {
+    for_each = var.deployment_circuit_breaker
+    content {
+      enable   = try(deployment_circuit_breaker.value.enable, false)
+      rollback = try(deployment_circuit_breaker.value.rollback, false)
+    }
+  }
 
 
   network_configuration {
@@ -162,7 +168,7 @@ module "acm" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
-  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this.name : var.route_53_zone_name}"
+  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[each.value.connect_to_lb].name : var.route_53_zone_name}"
   zone_id     = var.route_53_zone_id
 
   wait_for_validation = true
@@ -205,7 +211,7 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     host_header {
-      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this.name : var.route_53_zone_name}"]
+      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[each.value.connect_to_lb].name : var.route_53_zone_name}"]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -217,7 +223,9 @@ data "aws_vpc" "this" {
 }
 
 data "aws_route53_zone" "this" {
-  zone_id = try(var.route_53_zone_id)
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
+  zone_id  = try(var.route_53_zone_id, null)
+  name     = try(var.route_53_zone_name, null)
 }
 
 data "aws_lb" "this" {
