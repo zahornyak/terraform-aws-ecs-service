@@ -225,7 +225,6 @@ data "aws_vpc" "this" {
 data "aws_route53_zone" "this" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
   zone_id  = try(var.route_53_zone_id, null)
-  name     = try(var.route_53_zone_name, null)
 }
 
 data "aws_lb" "this" {
