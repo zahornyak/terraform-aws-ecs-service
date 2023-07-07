@@ -268,9 +268,7 @@ data "aws_iam_policy_document" "ecs_task_exec_policy" {
     actions = [
       "ssm:GetParameters"
     ]
-    resources = try(formatlist("arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}-app-${var.service_name}/%s",
-      keys(module.env_variables.parameters_arns)
-    ), ["arn:aws:ssm:*:*:parameter/null"])
+    resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}/${var.service_name}/*"]
   }
 }
 
