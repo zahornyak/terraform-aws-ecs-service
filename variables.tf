@@ -263,6 +263,17 @@ variable "lb_zone_id" {
   default     = null
 }
 
+variable "create_service_discovery" {
+  description = "creates service discovery service and connects in to ecs service"
+  type        = bool
+  default     = false
+}
+
+variable "discovery_registry_id" {
+  description = "service discovery registry_id"
+  type        = string
+  default     = null
+}
 
 
 

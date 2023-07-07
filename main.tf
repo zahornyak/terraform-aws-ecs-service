@@ -85,6 +85,13 @@ resource "aws_ecs_service" "service" {
 
   # add service discovery connection TODO
 
+  dynamic "service_registries" {
+    for_each = var.create_service_discovery ? [1] : []
+    content {
+      registry_arn = var.create_service_discovery ? aws_service_discovery_service.service[0].arn : null
+    }
+  }
+
   dynamic "capacity_provider_strategy" {
     for_each = var.capacity_provider_strategy
     content {
@@ -436,6 +443,27 @@ module "env_variables" {
   parameters = lookup(each.value, "ssm_secrets", {})
 
   file_path = lookup(each.value, "ssm_env_file", null)
+}
+
+
+resource "aws_service_discovery_service" "service" {
+  count = var.create_service_discovery ? 1 : 0
+
+  name = var.service_name
+
+  dns_config {
+    namespace_id   = var.discovery_registry_id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 
