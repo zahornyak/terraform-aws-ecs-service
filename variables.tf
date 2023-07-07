@@ -257,6 +257,12 @@ variable "deployment_circuit_breaker" {
   default     = {}
 }
 
+variable "lb_zone_id" {
+  description = "load balancer zone id"
+  type        = string
+  default     = null
+}
+
 
 
 

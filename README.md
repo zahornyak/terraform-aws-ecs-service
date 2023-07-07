@@ -417,6 +417,7 @@ module "ecs-service" {
 | <a name="input_lb_arn"></a> [lb\_arn](#input\_lb\_arn) | Load balancer arn. | `string` | `null` | no |
 | <a name="input_lb_dns_name"></a> [lb\_dns\_name](#input\_lb\_dns\_name) | Load balancer dns name. Use only if you dont have previously created Load Balancer | `string` | `null` | no |
 | <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
+| <a name="input_lb_zone_id"></a> [lb\_zone\_id](#input\_lb\_zone\_id) | load balancer zone id | `string` | `null` | no |
 | <a name="input_max_service_tasks"></a> [max\_service\_tasks](#input\_max\_service\_tasks) | Maximum service tasks. | `number` | `null` | no |
 | <a name="input_memory_scale_in_cooldown"></a> [memory\_scale\_in\_cooldown](#input\_memory\_scale\_in\_cooldown) | memory scale\_in\_cooldown | `number` | `null` | no |
 | <a name="input_memory_scale_out_cooldown"></a> [memory\_scale\_out\_cooldown](#input\_memory\_scale\_out\_cooldown) | memory scale\_out\_cooldown | `number` | `null` | no |

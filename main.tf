@@ -333,7 +333,7 @@ resource "aws_route53_record" "lb_records" {
 
   alias {
     name                   = var.lb_dns_name == null ? data.aws_lb.this[0].dns_name : var.lb_dns_name
-    zone_id                = var.route_53_zone_id
+    zone_id                = var.lb_zone_id == null ? data.aws_lb.this[0].zone_id : var.lb_zone_id
     evaluate_target_health = true
   }
 }
