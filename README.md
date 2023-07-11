@@ -21,8 +21,8 @@ module "ecs_service" {
   service_subnets    = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
   # assign_public_ip = true # if you are using public subnets
   cluster_name       = "production-cluster"
-  route_53_zone_id   = "Z01006347593463S0ZFL7A2"
-  route_53_zone_name = "example.com" # use when you dont have previously created Route53 zone
+  route_53_zone_id   = "Z01006347593463S0ZFL7A2" # use when you dont have previously created Route53 zone
+  route_53_zone_name = "example.com" 
   lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
   lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
   lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com" # use when you dont have previously created load balancer
