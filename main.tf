@@ -49,16 +49,6 @@ module "service_container_definition" {
 
 }
 
-#locals {
-#  container_def_keys = keys(var.container_definitions)
-#  env_ssm_vars = [
-#    for k, v in module.env_variables.parameters_arns : {
-#      name      = k
-#      valueFrom = v
-#    }
-#  ]
-#}
-
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
@@ -175,8 +165,8 @@ module "acm" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
-  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[each.value.connect_to_lb].name : var.route_53_zone_name}"
-  zone_id     = var.route_53_zone_id
+  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name}"
+  zone_id     = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
 
   wait_for_validation = true
 
@@ -218,7 +208,7 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     host_header {
-      values = ["${each.value.service_domain}.${var.route_53_zone_name == null ? data.aws_route53_zone.this[each.value.connect_to_lb].name : var.route_53_zone_name}"]
+      values = ["${each.value.service_domain}.${var.route_53_zone_name}"]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -230,14 +220,13 @@ data "aws_vpc" "this" {
 }
 
 data "aws_route53_zone" "this" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
-  zone_id  = try(var.route_53_zone_id, null)
+  count = var.route_53_zone_name != null ? 1 : 0
+  name  = try(var.route_53_zone_name, null)
 }
 
 data "aws_lb" "this" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.lb_arn, null) != null }
-  #  count = try(var.lb_arn != null ? 1 : 0, 0)
-  arn = var.lb_arn
+  count = var.lb_arn != null ? 1 : 0
+  arn   = var.lb_arn
 }
 
 
@@ -299,12 +288,6 @@ data "aws_iam_policy_document" "ecs_task_policy" {
     ]
     resources = ["*"]
   }
-  #  statement {
-  #    actions = [
-  #      "appmesh:*"
-  #    ]
-  #    resources = ["*"]
-  #  }
 }
 
 
@@ -332,7 +315,7 @@ module "ecs_task_role" {
 resource "aws_route53_record" "lb_records" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
-  zone_id = var.route_53_zone_id
+  zone_id = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
   name    = each.value.service_domain
   type    = "A"
 
