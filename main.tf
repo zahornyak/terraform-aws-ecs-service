@@ -165,7 +165,7 @@ module "acm" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.create_ssl == true }
 
 
-  domain_name = "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name}"
+  domain_name = lookup(each.value, "service_domain", null) != null ? "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name}" : lookup(each.value, "full_service_domain", null)
   zone_id     = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
 
   wait_for_validation = true
@@ -208,7 +208,7 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     host_header {
-      values = ["${each.value.service_domain}.${var.route_53_zone_name}"]
+      values = lookup(each.value, "service_domain", null) != null ? ["${each.value.service_domain}.${var.route_53_zone_name}"] : [lookup(each.value, "full_service_domain", null)]
     }
   }
   depends_on = [aws_lb_target_group.service[0]]
@@ -316,7 +316,7 @@ resource "aws_route53_record" "lb_records" {
   for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true }
 
   zone_id = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
-  name    = each.value.service_domain
+  name    = lookup(each.value, "service_domain", null) != null ? lookup(each.value, "service_domain", null) : ""
   type    = "A"
 
   alias {
