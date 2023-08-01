@@ -24,12 +24,12 @@ output "ecs_service_name" {
 }
 
 output "cloudwatch_log_group_arns" {
-  value       = try(aws_cloudwatch_log_group.service_logs[*].arn, null)
+  value       = try([for k, v in aws_cloudwatch_log_group.service_logs : v.arn], null)
   description = "aws cloudwatch log group arns"
 }
 
 output "lb_listener_certificate" {
-  value       = try(aws_lb_listener_certificate.this[*].listener_arn, null)
+  value       = try([for k, v in aws_lb_listener_certificate.this : v.listener_arn], null)
   description = "lb listener certificate"
 }
 
@@ -39,7 +39,7 @@ output "acm_arn" {
 }
 
 output "target_group_arns" {
-  value       = try(aws_lb_target_group.service[*].arn, null)
+  value       = try([for k, v in aws_lb_target_group.service : v.arn], null)
   description = "target group arns"
 }
 
