@@ -182,6 +182,7 @@ resource "aws_lb_target_group" "service" {
   target_type          = var.tg_target_type
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay
+  protocol_version     = var.protocol_version
   health_check {
     enabled             = try(var.health_check.enabled, null)
     interval            = try(var.health_check.interval, null)

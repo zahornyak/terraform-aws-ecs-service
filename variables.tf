@@ -275,5 +275,11 @@ variable "discovery_registry_id" {
   default     = null
 }
 
+variable "protocol_version" {
+  description = "target group protocol version"
+  type        = string
+  default     = null
+}
+
 
 
