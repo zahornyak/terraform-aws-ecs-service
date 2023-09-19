@@ -135,7 +135,15 @@ resource "aws_ecs_service" "service" {
     }
   }
 
+  dynamic "load_balancer" {
+    for_each = { for k, v in var.container_definitions : k => v if try(v.target_group_arn_additional, null) != null }
 
+    content {
+      target_group_arn = load_balancer.value.target_group_arn_additional
+      container_name   = load_balancer.value.container_name
+      container_port   = load_balancer.value.containerPort_additional
+    }
+  }
 
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
