@@ -72,8 +72,10 @@ resource "aws_ecs_task_definition" "service" {
       name      = lookup(var.efs_volume, "name", null)
       host_path = lookup(var.efs_volume, "host_path", null)
       efs_volume_configuration {
-        file_system_id = lookup(var.efs_volume, "file_system_id", null)
-        root_directory = lookup(var.efs_volume, "root_directory", null)
+        file_system_id          = lookup(var.efs_volume, "file_system_id", null)
+        root_directory          = lookup(var.efs_volume, "root_directory", null)
+        transit_encryption      = lookup(var.efs_volume, "transit_encryption", null)
+        transit_encryption_port = lookup(var.efs_volume, "transit_encryption_port", null)
         authorization_config {
           access_point_id = lookup(var.efs_volume, "access_point_id", null)
           iam             = lookup(var.efs_volume, "iam", null)
