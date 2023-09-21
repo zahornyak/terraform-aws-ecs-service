@@ -425,6 +425,8 @@ module "ecs-service" {
 | <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Deregistration delay for target group. | `number` | `5` | no |
 | <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired count for service. | `number` | `null` | no |
 | <a name="input_discovery_registry_id"></a> [discovery\_registry\_id](#input\_discovery\_registry\_id) | service discovery registry\_id | `string` | `null` | no |
+| <a name="input_docker_volume"></a> [docker\_volume](#input\_docker\_volume) | docker volume | `any` | `null` | no |
+| <a name="input_efs_volume"></a> [efs\_volume](#input\_efs\_volume) | efs volume | `any` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
 | <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Custom healthcheck for target group. | `any` | `null` | no |
 | <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `null` | no |

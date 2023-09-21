@@ -37,6 +37,9 @@ module "service_container_definition" {
     }
   ]
 
+  volumes_from = lookup(each.value, "volumes_from", null)
+  mount_points = lookup(each.value, "mount_points", null)
+
   environment_files = lookup(each.value, "environment_files", null)
   environment       = lookup(each.value, "environment", null)
 
@@ -62,6 +65,37 @@ resource "aws_ecs_task_definition" "service" {
   network_mode             = var.network_mode
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
   task_role_arn            = module.ecs_task_role.iam_role_arn
+
+  dynamic "volume" {
+    for_each = var.efs_volume != null ? [1] : []
+    content {
+      name      = lookup(var.efs_volume, "name", null)
+      host_path = lookup(var.efs_volume, "host_path", null)
+      efs_volume_configuration {
+        file_system_id = lookup(var.efs_volume, "file_system_id", null)
+        root_directory = lookup(var.efs_volume, "root_directory", null)
+        authorization_config {
+          access_point_id = lookup(var.efs_volume, "access_point_id", null)
+          iam             = lookup(var.efs_volume, "iam", null)
+        }
+      }
+    }
+  }
+
+  dynamic "volume" {
+    for_each = var.docker_volume != null ? [1] : []
+    content {
+      name      = lookup(var.docker_volume, "name", null)
+      host_path = lookup(var.docker_volume, "host_path", null)
+      docker_volume_configuration {
+        autoprovision = lookup(var.docker_volume, "autoprovision", null)
+        driver        = lookup(var.docker_volume, "driver", null)
+        driver_opts   = lookup(var.docker_volume, "driver_opts", null)
+        labels        = lookup(var.docker_volume, "labels", null)
+        scope         = lookup(var.docker_volume, "scope", null)
+      }
+    }
+  }
 }
 
 # service creation

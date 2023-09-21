@@ -281,5 +281,17 @@ variable "protocol_version" {
   default     = null
 }
 
+variable "docker_volume" {
+  description = "docker volume"
+  type        = any
+  default     = null
+}
+
+variable "efs_volume" {
+  description = "efs volume"
+  type        = any
+  default     = null
+}
+
 
 
