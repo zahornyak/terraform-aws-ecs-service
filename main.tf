@@ -289,10 +289,12 @@ module "ecs_task_execution_role" {
   role_requires_mfa = false
 
 
-  custom_role_policy_arns = [
+  custom_role_policy_arns = concat([
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     module.ecs_task_exec_policy.arn
-  ]
+  ], var.task_exec_role_policy_arns)
+
+
 }
 
 module "ecs_task_exec_policy" {

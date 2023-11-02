@@ -454,7 +454,8 @@ module "ecs-service" {
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | Name of the service. | `string` | n/a | yes |
 | <a name="input_service_subnets"></a> [service\_subnets](#input\_service\_subnets) | Subnets for service | `list(string)` | n/a | yes |
-| <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Policies to attach to task role of ECS container. | `list(string)` | `[]` | no |
+| <a name="input_task_exec_role_policy_arns"></a> [task\_exec\_role\_policy\_arns](#input\_task\_exec\_role\_policy\_arns) | Additional policies to attach to task execution role of ECS container. | `list(string)` | `[]` | no |
+| <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Additional policies to attach to task role of ECS container. | `list(string)` | `[]` | no |
 | <a name="input_tg_protocol"></a> [tg\_protocol](#input\_tg\_protocol) | target group protocol(for example 'HTTP' or 'TCP') | `string` | `"HTTP"` | no |
 | <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
 | <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |

@@ -112,7 +112,13 @@ variable "route_53_zone_id" {
 }
 
 variable "task_role_policy_arns" {
-  description = "Policies to attach to task role of ECS container."
+  description = "Additional policies to attach to task role of ECS container."
+  type        = list(string)
+  default     = []
+}
+
+variable "task_exec_role_policy_arns" {
+  description = "Additional policies to attach to task execution role of ECS container."
   type        = list(string)
   default     = []
 }
