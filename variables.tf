@@ -299,5 +299,11 @@ variable "efs_volume" {
   default     = null
 }
 
+variable "runtime_platform" {
+  description = "runtime platform"
+  type        = string
+  default     = null
+}
+
 
 

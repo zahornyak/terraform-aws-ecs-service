@@ -66,6 +66,14 @@ resource "aws_ecs_task_definition" "service" {
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
   task_role_arn            = module.ecs_task_role.iam_role_arn
 
+  dynamic "runtime_platform" {
+    for_each = var.runtime_platform != null ? [1] : []
+    content {
+      cpu_architecture        = lookup(var.runtime_platform, "cpu_architecture", null)
+      operating_system_family = lookup(var.runtime_platform, "operating_system_family", null)
+    }
+  }
+
   dynamic "volume" {
     for_each = var.efs_volume != null ? [1] : []
     content {

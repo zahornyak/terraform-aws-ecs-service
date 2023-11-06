@@ -1,4 +1,5 @@
 .envrc
+.DS_Store
 
 # Editors
 **/.vs
