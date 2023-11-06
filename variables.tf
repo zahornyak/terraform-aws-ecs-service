@@ -301,7 +301,7 @@ variable "efs_volume" {
 
 variable "runtime_platform" {
   description = "runtime platform"
-  type        = string
+  type        = any
   default     = null
 }
 

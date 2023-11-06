@@ -449,7 +449,7 @@ module "ecs-service" {
 | <a name="input_retention_in_days"></a> [retention\_in\_days](#input\_retention\_in\_days) | retention\_in\_days | `number` | `60` | no |
 | <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | `null` | no |
 | <a name="input_route_53_zone_name"></a> [route\_53\_zone\_name](#input\_route\_53\_zone\_name) | route 53 zone name. Use only when you dont have previously created Route53 zone | `string` | `null` | no |
-| <a name="input_runtime_platform"></a> [runtime\_platform](#input\_runtime\_platform) | runtime platform | `string` | `null` | no |
+| <a name="input_runtime_platform"></a> [runtime\_platform](#input\_runtime\_platform) | runtime platform | `any` | `null` | no |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | additional security\_groups for service | `list(string)` | `[]` | no |
 | <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
