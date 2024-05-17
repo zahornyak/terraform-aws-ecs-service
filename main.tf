@@ -29,7 +29,7 @@ module "service_container_definition" {
 
   container_depends_on = lookup(each.value, "container_depends_on", null)
 
-  port_mappings = lookup(each.value, "port_mappings", null) != null ? lookup(each.value, "port_mappings", null) : [
+  port_mappings = lookup(each.value, "port_mappings", null) != null || lookup(each.value, "containerPort", null) == null ? lookup(each.value, "port_mappings", []) : [
     {
       containerPort = lookup(each.value, "containerPort", null)
       protocol      = lookup(each.value, "protocol", "tcp")
