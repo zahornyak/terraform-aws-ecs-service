@@ -386,7 +386,7 @@ module "service_container_sg" {
   source  = "registry.terraform.io/terraform-aws-modules/security-group/aws"
   version = "~> 4.3"
 
-  for_each = { for k, v in var.container_definitions : k => v }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.containerPort, null) != null }
 
 
   name        = "${var.environment}-service-${each.value.container_name}-container-sg"
