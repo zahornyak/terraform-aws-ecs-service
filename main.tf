@@ -152,12 +152,9 @@ resource "aws_ecs_service" "service" {
     }
   }
 
-  dynamic "deployment_circuit_breaker" {
-    for_each = var.deployment_circuit_breaker
-    content {
-      enable   = try(deployment_circuit_breaker.value.enable, false)
-      rollback = try(deployment_circuit_breaker.value.rollback, false)
-    }
+  deployment_circuit_breaker {
+    enable   = try(var.deployment_circuit_breaker.enable, true)
+    rollback = try(var.deployment_circuit_breaker.rollback, false)
   }
 
 
@@ -407,7 +404,7 @@ module "service_container_sg" {
 
 }
 
-# add autoscaling TODO
+
 resource "aws_appautoscaling_target" "service_scaling" {
   count = var.max_service_tasks != null || var.min_service_tasks != null ? 1 : 0
 
