@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.2.0...v0.2.1) (2024-10-14)
+
+
+### Bug Fixes
+
+* add external dns ([f131ca7](https://github.com/zahornyak/terraform-aws-ecs-service/commit/f131ca76ff9a040c06e5e12d3c113e2c4ec09685))
+
 ## [0.2.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.1.26...v0.2.0) (2024-05-21)
 
 
