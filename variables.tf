@@ -305,5 +305,12 @@ variable "runtime_platform" {
   default     = null
 }
 
+variable "external_dns" {
+  description = "when you dont have route53 zone, you can use external dns"
+  type        = any
+  default     = null
+}
+
+
 
 
