@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.2.1...v0.3.0) (2025-04-23)
+
+
+### Features
+
+* add lb listener conditions ([82f0b03](https://github.com/zahornyak/terraform-aws-ecs-service/commit/82f0b03495a5577bb770cd91e809f3693f014b41))
+
 ## [0.2.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.2.0...v0.2.1) (2024-10-14)
 
 
