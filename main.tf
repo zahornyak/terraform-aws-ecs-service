@@ -397,7 +397,7 @@ module "ecs_task_role" {
 
 
 resource "aws_route53_record" "lb_records" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.external_dns == false }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.external_dns == false && try(v.create_route53_records, true) == true }
 
   zone_id = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
   name    = lookup(each.value, "service_domain", null) != null ? lookup(each.value, "service_domain", null) : ""
