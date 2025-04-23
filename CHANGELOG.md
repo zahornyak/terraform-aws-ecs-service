@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.1...v0.3.2) (2025-04-23)
+
+
+### Bug Fixes
+
+* add lb listener conditions(fix route53 record creation) ([928b794](https://github.com/zahornyak/terraform-aws-ecs-service/commit/928b79409c295e17b5176d6c5efec19dff67b42f))
+
 ## [0.3.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.0...v0.3.1) (2025-04-23)
 
 
