@@ -293,12 +293,6 @@ resource "aws_lb_listener_rule" "service" {
     }
   }
 
-
-  condition {
-    host_header {
-      values = lookup(each.value, "service_domain", null) != null ? ["${each.value.service_domain}.${var.route_53_zone_name}"] : [lookup(each.value, "full_service_domain", null)]
-    }
-  }
   depends_on = [aws_lb_target_group.service[0]]
 }
 
