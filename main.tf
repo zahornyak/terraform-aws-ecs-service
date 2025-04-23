@@ -256,6 +256,44 @@ resource "aws_lb_listener_rule" "service" {
     target_group_arn = aws_lb_target_group.service[each.key].arn
   }
 
+  dynamic "condition" {
+    for_each = { for k, v in var.container_definitions : k => v if try(v.service_domain, null) != null || try(v.full_service_domain, null) != null }
+    content {
+      host_header {
+        values = lookup(each.value, "service_domain", null) != null ? ["${each.value.service_domain}.${var.route_53_zone_name}"] : [lookup(each.value, "full_service_domain", null)]
+      }
+    }
+  }
+
+  dynamic "condition" {
+    for_each = { for k, v in var.container_definitions : k => v if try(v.path_pattern, null) != null }
+    content {
+      path_pattern {
+        values = lookup(each.value, "path_pattern", null)
+      }
+    }
+  }
+
+  dynamic "condition" {
+    for_each = { for k, v in var.container_definitions : k => v if try(v.http_header, null) != null }
+    content {
+      http_header {
+        http_header_name = lookup(each.value, "http_header_name", null)
+        values           = lookup(each.value, "http_header", null)
+      }
+    }
+  }
+
+  dynamic "condition" {
+    for_each = { for k, v in var.container_definitions : k => v if try(v.http_request_method, null) != null }
+    content {
+      http_request_method {
+        values = lookup(each.value, "http_request_method", null)
+      }
+    }
+  }
+
+
   condition {
     host_header {
       values = lookup(each.value, "service_domain", null) != null ? ["${each.value.service_domain}.${var.route_53_zone_name}"] : [lookup(each.value, "full_service_domain", null)]
