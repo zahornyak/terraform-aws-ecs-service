@@ -50,6 +50,8 @@ module "service_container_definition" {
     }
   ] : lookup(each.value, "secrets", null)
 
+  command = lookup(each.value, "command", [])
+
 }
 
 data "aws_caller_identity" "current" {}
