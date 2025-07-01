@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.2...v0.3.3) (2025-07-01)
+
+
+### Bug Fixes
+
+* add container command ([975d033](https://github.com/zahornyak/terraform-aws-ecs-service/commit/975d03321d17361f82eae0fd5f3e0a0ee0f876f7))
+
 ## [0.3.2](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.1...v0.3.2) (2025-04-23)
 
 
