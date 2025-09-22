@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.3...v0.3.4) (2025-09-22)
+
+
+### Bug Fixes
+
+* bump env_variables module version ([f65520f](https://github.com/zahornyak/terraform-aws-ecs-service/commit/f65520f26f2a1945e0db127fe24577bbfd5f4584))
+
 ## [0.3.3](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.2...v0.3.3) (2025-07-01)
 
 
