@@ -503,7 +503,7 @@ resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
 
 module "env_variables" {
   source  = "zahornyak/multiple-ssm-parameters/aws"
-  version = "0.0.11"
+  version = "0.0.13"
 
   for_each = { for k, v in var.container_definitions : k => v if try(v.ssm_secrets, null) != null || try(v.ssm_env_file, null) != null }
 
