@@ -57,6 +57,28 @@ module "service_container_definition" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Local values for IAM role policies to ensure known structure
+locals {
+  task_exec_role_policies = merge(
+    {
+      AmazonECSTaskExecutionRolePolicy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      EcsTaskExecPolicy                = module.ecs_task_exec_policy.arn
+    },
+    {
+      for idx, arn in var.task_exec_role_policy_arns : "AdditionalPolicy${idx}" => arn
+    }
+  )
+
+  task_role_policies = merge(
+    {
+      EcsTaskPolicy = module.ecs_task_policy.arn
+    },
+    {
+      for idx, arn in var.task_role_policy_arns : "AdditionalPolicy${idx}" => arn
+    }
+  )
+}
+
 # task definition for service
 resource "aws_ecs_task_definition" "service" {
   family                   = "${var.environment}_${var.service_name}_task"
@@ -318,7 +340,8 @@ module "ecs_task_execution_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.0"
 
-  name = "${var.environment}-${var.service_name}EcsTaskExecutionRole"
+  name            = "${var.environment}-${var.service_name}EcsTaskExecutionRole"
+  use_name_prefix = false
 
   create = true
 
@@ -334,13 +357,7 @@ module "ecs_task_execution_role" {
     }
   }
 
-  policies = merge(
-    {
-      AmazonECSTaskExecutionRolePolicy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-      EcsTaskExecPolicy                = module.ecs_task_exec_policy.arn
-    },
-    { for idx, arn in var.task_exec_role_policy_arns : "AdditionalPolicy${idx}" => arn }
-  )
+  policies = local.task_exec_role_policies
 }
 
 module "ecs_task_exec_policy" {
@@ -388,7 +405,8 @@ module "ecs_task_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.0"
 
-  name = "${var.environment}-${var.service_name}EcsTaskRole"
+  name            = "${var.environment}-${var.service_name}EcsTaskRole"
+  use_name_prefix = false
 
   create = true
 
@@ -404,12 +422,7 @@ module "ecs_task_role" {
     }
   }
 
-  policies = merge(
-    {
-      EcsTaskPolicy = module.ecs_task_policy.arn
-    },
-    { for idx, arn in var.task_role_policy_arns : "AdditionalPolicy${idx}" => arn }
-  )
+  policies = local.task_role_policies
 }
 
 
