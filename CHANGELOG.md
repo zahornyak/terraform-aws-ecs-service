@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.0...v0.4.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* resolve count argument error by upgrading to IAM module v6.0 ([a9763e2](https://github.com/zahornyak/terraform-aws-ecs-service/commit/a9763e293622f4b11cee8c93beac02eaeb661812))
+
 ## [0.4.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.4...v0.4.0) (2025-12-08)
 
 
