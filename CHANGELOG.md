@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.4...v0.4.0) (2025-12-08)
+
+
+### Features
+
+* update ECS task role policy ARNs count ([86c724a](https://github.com/zahornyak/terraform-aws-ecs-service/commit/86c724a162a42d1736098cea25ff07038850cd5c))
+
 ## [0.3.4](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.3.3...v0.3.4) (2025-09-22)
 
 
