@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.2...v0.4.3) (2025-12-08)
+
+
+### Bug Fixes
+
+* simplify IAM role policies by merging directly in module configuration ([1792ea6](https://github.com/zahornyak/terraform-aws-ecs-service/commit/1792ea6d9cad1622765215f396a0760816e7e3c9))
+
 ## [0.4.2](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.1...v0.4.2) (2025-12-08)
 
 
