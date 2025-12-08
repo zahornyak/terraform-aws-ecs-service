@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.1...v0.4.2) (2025-12-08)
+
+
+### Bug Fixes
+
+* set use_name_prefix=false and move policies to locals for IAM v6.0 compatibility ([bd1a6f1](https://github.com/zahornyak/terraform-aws-ecs-service/commit/bd1a6f1ad7cb38cb3521cf347106b6c75d0bc3c8))
+
 ## [0.4.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.0...v0.4.1) (2025-12-08)
 
 
