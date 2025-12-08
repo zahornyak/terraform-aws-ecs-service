@@ -49,7 +49,7 @@ output "lb_listener_rule_arns" {
 }
 
 output "ecs_task_execution_role_arn" {
-  value       = module.ecs_task_execution_role.iam_role_arn
+  value       = module.ecs_task_execution_role.arn
   description = "ecs task execution role arn"
 }
 
@@ -59,7 +59,7 @@ output "ecs_task_policy_arn" {
 }
 
 output "ecs_task_role_arn" {
-  value       = module.ecs_task_role.iam_role_arn
+  value       = module.ecs_task_role.arn
   description = "ecs task role arn"
 }
 

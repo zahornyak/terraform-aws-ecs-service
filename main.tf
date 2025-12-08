@@ -65,8 +65,8 @@ resource "aws_ecs_task_definition" "service" {
   memory                   = var.service_memory
   requires_compatibilities = var.requires_compatibilities
   network_mode             = var.network_mode
-  execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
-  task_role_arn            = module.ecs_task_role.iam_role_arn
+  execution_role_arn       = module.ecs_task_execution_role.arn
+  task_role_arn            = module.ecs_task_role.arn
 
   dynamic "runtime_platform" {
     for_each = var.runtime_platform != null ? [1] : []
@@ -315,26 +315,32 @@ data "aws_lb" "this" {
 
 
 module "ecs_task_execution_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
-  version = "~> 4.4"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  version = "~> 6.0"
 
-  trusted_role_services = [
-    "ecs-tasks.amazonaws.com"
-  ]
+  name = "${var.environment}-${var.service_name}EcsTaskExecutionRole"
 
-  create_role = true
+  create = true
 
-  role_name         = "${var.environment}-${var.service_name}EcsTaskExecutionRole"
-  role_requires_mfa = false
+  trust_policy_permissions = {
+    TrustServiceToAssume = {
+      actions = ["sts:AssumeRole"]
+      principals = [
+        {
+          type        = "Service"
+          identifiers = ["ecs-tasks.amazonaws.com"]
+        }
+      ]
+    }
+  }
 
-  number_of_custom_role_policy_arns = 2 + length(var.task_exec_role_policy_arns)
-
-  custom_role_policy_arns = concat([
-    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
-    module.ecs_task_exec_policy.arn
-  ], var.task_exec_role_policy_arns)
-
-
+  policies = merge(
+    {
+      AmazonECSTaskExecutionRolePolicy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      EcsTaskExecPolicy                = module.ecs_task_exec_policy.arn
+    },
+    { for idx, arn in var.task_exec_role_policy_arns : "AdditionalPolicy${idx}" => arn }
+  )
 }
 
 module "ecs_task_exec_policy" {
@@ -379,24 +385,31 @@ data "aws_iam_policy_document" "ecs_task_policy" {
 
 
 module "ecs_task_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
-  version = "~> 4.4"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  version = "~> 6.0"
 
-  trusted_role_services = [
-    "ecs-tasks.amazonaws.com"
-  ]
+  name = "${var.environment}-${var.service_name}EcsTaskRole"
 
-  create_role = true
+  create = true
 
-  role_name         = "${var.environment}-${var.service_name}EcsTaskRole"
-  role_requires_mfa = false
+  trust_policy_permissions = {
+    TrustServiceToAssume = {
+      actions = ["sts:AssumeRole"]
+      principals = [
+        {
+          type        = "Service"
+          identifiers = ["ecs-tasks.amazonaws.com"]
+        }
+      ]
+    }
+  }
 
-  number_of_custom_role_policy_arns = 1 + length(var.task_role_policy_arns)
-
-  custom_role_policy_arns = concat([
-    module.ecs_task_policy.arn
-  ], var.task_role_policy_arns)
-
+  policies = merge(
+    {
+      EcsTaskPolicy = module.ecs_task_policy.arn
+    },
+    { for idx, arn in var.task_role_policy_arns : "AdditionalPolicy${idx}" => arn }
+  )
 }
 
 
