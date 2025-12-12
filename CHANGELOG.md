@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.3...v1.0.0) (2025-12-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* task_role_policy_arns and task_exec_role_policy_arns
+replaced with task_role_policy_json and task_exec_role_policy_json.
+Now accepts policy JSON from data.aws_iam_policy_document instead of ARNs.
+
+### Bug Fixes
+
+* use inline policies with JSON instead of policy ARN attachments ([8bce716](https://github.com/zahornyak/terraform-aws-ecs-service/commit/8bce7164d32611a598495a6917f2dbfb68df94d0))
+
 ## [0.4.3](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.2...v0.4.3) (2025-12-08)
 
 
