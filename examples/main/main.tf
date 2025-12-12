@@ -34,4 +34,15 @@ module "ecs_service" {
 
   service_memory = 1024
   service_cpu    = 512
+
+  # Optional: Add additional inline IAM policies to task role
+  # Map format: policy names (keys) to policy JSON documents (values)
+  # task_role_policy_json = {
+  #   s3_access = data.aws_iam_policy_document.s3_access.json
+  # }
+
+  # Optional: Add additional inline IAM policies to task execution role
+  # task_exec_role_policy_json = {
+  #   cloudwatch_logs = data.aws_iam_policy_document.cloudwatch_logs.json
+  # }
 }

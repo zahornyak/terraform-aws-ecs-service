@@ -111,16 +111,16 @@ variable "route_53_zone_id" {
   default     = null
 }
 
-variable "task_role_policy_arns" {
-  description = "Additional policies to attach to task role of ECS container."
-  type        = list(string)
-  default     = []
+variable "task_role_policy_json" {
+  description = "Additional inline policies for task role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy_name' = 'policy_json'}. Policy JSON can come from data.aws_iam_policy_document resources."
+  type        = map(string)
+  default     = {}
 }
 
-variable "task_exec_role_policy_arns" {
-  description = "Additional policies to attach to task execution role of ECS container."
-  type        = list(string)
-  default     = []
+variable "task_exec_role_policy_json" {
+  description = "Additional inline policies for task execution role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy_name' = 'policy_json'}. Policy JSON can come from data.aws_iam_policy_document resources."
+  type        = map(string)
+  default     = {}
 }
 
 variable "lb_arn" {

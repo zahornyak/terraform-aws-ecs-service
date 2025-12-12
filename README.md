@@ -355,6 +355,52 @@ module "ecs-service" {
 }
 ```
 
+### IAM Role Policies example
+```hcl
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::my-bucket/*",
+      "arn:aws:s3:::my-bucket"
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "secrets_manager_ro" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
+    ]
+    resources = ["*"]
+  }
+}
+
+module "ecs-service" {
+  source = "zahornyak/ecs-service/aws"
+  # insert the 7 required variables here
+
+  # Task role policies (for the application running in the container)
+  # Map format: policy names (keys) to policy JSON documents (values)
+  # Policy JSON can come from data.aws_iam_policy_document resources
+  task_role_policy_json = {
+    secrets_manager_ro = data.aws_iam_policy_document.secrets_manager_ro.json
+    s3_access          = data.aws_iam_policy_document.s3_access.json
+  }
+
+  # Task execution role policies (for ECS to pull images, write logs, etc.)
+  task_exec_role_policy_json = {
+    cloudwatch_logs = data.aws_iam_policy_document.cloudwatch_logs.json
+  }
+}
+```
+
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -393,6 +439,10 @@ module "ecs-service" {
 | [aws_cloudwatch_log_group.service_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_ecs_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
+| [aws_iam_role_policy.task_execution_role_custom](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy.task_role_custom](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy_attachment.task_execution_role_module_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.task_role_module_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_lb_listener_certificate.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
@@ -456,8 +506,8 @@ module "ecs-service" {
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | Name of the service. | `string` | n/a | yes |
 | <a name="input_service_subnets"></a> [service\_subnets](#input\_service\_subnets) | Subnets for service | `list(string)` | n/a | yes |
-| <a name="input_task_exec_role_policy_arns"></a> [task\_exec\_role\_policy\_arns](#input\_task\_exec\_role\_policy\_arns) | Additional policies to attach to task execution role of ECS container. | `list(string)` | `[]` | no |
-| <a name="input_task_role_policy_arns"></a> [task\_role\_policy\_arns](#input\_task\_role\_policy\_arns) | Additional policies to attach to task role of ECS container. | `list(string)` | `[]` | no |
+| <a name="input_task_exec_role_policy_json"></a> [task\_exec\_role\_policy\_json](#input\_task\_exec\_role\_policy\_json) | Additional inline policies for task execution role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy\_name' = 'policy\_json'}. Policy JSON can come from data.aws\_iam\_policy\_document resources. | `map(string)` | `{}` | no |
+| <a name="input_task_role_policy_json"></a> [task\_role\_policy\_json](#input\_task\_role\_policy\_json) | Additional inline policies for task role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy\_name' = 'policy\_json'}. Policy JSON can come from data.aws\_iam\_policy\_document resources. | `map(string)` | `{}` | no |
 | <a name="input_tg_protocol"></a> [tg\_protocol](#input\_tg\_protocol) | target group protocol(for example 'HTTP' or 'TCP') | `string` | `"HTTP"` | no |
 | <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
 | <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |

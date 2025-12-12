@@ -1,5 +1,6 @@
 module "ecs_service" {
-  source = "zahornyak/ecs-service/aws"
+  # source = "zahornyak/ecs-service/aws"
+  source = "../../"
 
   environment     = "production"
   vpc_id          = aws_vpc.main.id
@@ -40,6 +41,43 @@ module "ecs_service" {
 
   service_memory = 1024
   service_cpu    = 512
+
+  # Example: Add additional inline IAM policies to task role
+  # Map format: policy names (keys) to policy JSON documents (values)
+  task_role_policy_json = {
+    s3_access = data.aws_iam_policy_document.s3_access.json
+  }
+
+  # Example: Add additional inline IAM policies to task execution role
+  task_exec_role_policy_json = {
+    cloudwatch_logs = data.aws_iam_policy_document.cloudwatch_logs.json
+  }
+}
+
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::my-bucket/*",
+      "arn:aws:s3:::my-bucket"
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "cloudwatch_logs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_vpc" "main" {

@@ -336,13 +336,22 @@ module "ecs_task_execution_role" {
     }
   }
 
-  policies = merge(
-    {
-      AmazonECSTaskExecutionRolePolicy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-      EcsTaskExecPolicy                = module.ecs_task_exec_policy.arn
-    },
-    { for idx, arn in var.task_exec_role_policy_arns : "AdditionalPolicy${idx}" => arn }
-  )
+  policies = {
+    AmazonECSTaskExecutionRolePolicy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "task_execution_role_module_policy" {
+  role       = module.ecs_task_execution_role.name
+  policy_arn = module.ecs_task_exec_policy.arn
+}
+
+resource "aws_iam_role_policy" "task_execution_role_custom" {
+  for_each = var.task_exec_role_policy_json
+
+  name   = each.key
+  role   = module.ecs_task_execution_role.name
+  policy = each.value
 }
 
 module "ecs_task_exec_policy" {
@@ -408,12 +417,20 @@ module "ecs_task_role" {
     }
   }
 
-  policies = merge(
-    {
-      EcsTaskPolicy = module.ecs_task_policy.arn
-    },
-    { for idx, arn in var.task_role_policy_arns : "AdditionalPolicy${idx}" => arn }
-  )
+  policies = {}
+}
+
+resource "aws_iam_role_policy_attachment" "task_role_module_policy" {
+  role       = module.ecs_task_role.name
+  policy_arn = module.ecs_task_policy.arn
+}
+
+resource "aws_iam_role_policy" "task_role_custom" {
+  for_each = var.task_role_policy_json
+
+  name   = each.key
+  role   = module.ecs_task_role.name
+  policy = each.value
 }
 
 
@@ -509,6 +526,7 @@ resource "aws_appautoscaling_policy" "target_tracking_scaling_memory_service" {
     disable_scale_in = true
   }
 }
+
 
 ## SSM
 #locals {
