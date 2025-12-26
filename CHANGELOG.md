@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.0.0...v1.0.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* fix ssl creation ([147dc9e](https://github.com/zahornyak/terraform-aws-ecs-service/commit/147dc9e08a196cb3c6263f529c01e4b031d4a53e))
+
 ## [1.0.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v0.4.3...v1.0.0) (2025-12-12)
 
 
