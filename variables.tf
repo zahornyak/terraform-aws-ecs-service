@@ -311,6 +311,12 @@ variable "external_dns" {
   default     = null
 }
 
+variable "external_domain" {
+  description = "when true, zone_id will be null for ACM and Route53 records will not be created"
+  type        = bool
+  default     = false
+}
+
 
 
 

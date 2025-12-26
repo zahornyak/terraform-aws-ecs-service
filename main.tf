@@ -217,7 +217,7 @@ module "acm" {
 
 
   domain_name = lookup(each.value, "service_domain", null) != null ? "${lookup(each.value, "service_domain", null)}.${var.route_53_zone_name}" : lookup(each.value, "full_service_domain", null)
-  zone_id     = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
+  zone_id     = var.external_domain == true ? null : (var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id)
 
   wait_for_validation = true
 
@@ -435,7 +435,7 @@ resource "aws_iam_role_policy" "task_role_custom" {
 
 
 resource "aws_route53_record" "lb_records" {
-  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.external_dns == false && try(v.create_route53_records, true) == true }
+  for_each = { for k, v in var.container_definitions : k => v if try(v.connect_to_lb, false) == true && var.external_dns == false && var.external_domain == false && try(v.create_route53_records, true) == true }
 
   zone_id = var.route_53_zone_id == null ? data.aws_route53_zone.this[0].zone_id : var.route_53_zone_id
   name    = lookup(each.value, "service_domain", null) != null ? lookup(each.value, "service_domain", null) : ""

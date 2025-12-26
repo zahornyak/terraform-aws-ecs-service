@@ -479,6 +479,7 @@ module "ecs-service" {
 | <a name="input_efs_volume"></a> [efs\_volume](#input\_efs\_volume) | efs volume | `any` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
 | <a name="input_external_dns"></a> [external\_dns](#input\_external\_dns) | when you dont have route53 zone, you can use external dns | `any` | `null` | no |
+| <a name="input_external_domain"></a> [external\_domain](#input\_external\_domain) | when true, zone\_id will be null for ACM and Route53 records will not be created | `bool` | `false` | no |
 | <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Custom healthcheck for target group. | `any` | `null` | no |
 | <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `null` | no |
 | <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
