@@ -293,8 +293,14 @@ variable "docker_volume" {
   default     = null
 }
 
+variable "efs_volumes" {
+  description = "Map of EFS volumes to mount. Each key is a volume name, value contains volume configuration."
+  type        = map(any)
+  default     = {}
+}
+
 variable "efs_volume" {
-  description = "efs volume"
+  description = "Single EFS volume (deprecated, use efs_volumes instead)"
   type        = any
   default     = null
 }

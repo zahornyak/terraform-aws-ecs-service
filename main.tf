@@ -77,6 +77,25 @@ resource "aws_ecs_task_definition" "service" {
   }
 
   dynamic "volume" {
+    for_each = var.efs_volumes
+    content {
+      name      = lookup(volume.value, "name", volume.key)
+      host_path = lookup(volume.value, "host_path", null)
+      efs_volume_configuration {
+        file_system_id          = lookup(volume.value, "file_system_id", null)
+        root_directory          = lookup(volume.value, "root_directory", null)
+        transit_encryption      = lookup(volume.value, "transit_encryption", null)
+        transit_encryption_port = lookup(volume.value, "transit_encryption_port", null)
+        authorization_config {
+          access_point_id = lookup(volume.value, "access_point_id", null)
+          iam             = lookup(volume.value, "iam", null)
+        }
+      }
+    }
+  }
+
+  # Backward compatibility: support single efs_volume (deprecated)
+  dynamic "volume" {
     for_each = var.efs_volume != null ? [1] : []
     content {
       name      = lookup(var.efs_volume, "name", null)

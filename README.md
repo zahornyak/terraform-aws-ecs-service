@@ -476,7 +476,8 @@ module "ecs-service" {
 | <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired count for service. | `number` | `null` | no |
 | <a name="input_discovery_registry_id"></a> [discovery\_registry\_id](#input\_discovery\_registry\_id) | service discovery registry\_id | `string` | `null` | no |
 | <a name="input_docker_volume"></a> [docker\_volume](#input\_docker\_volume) | docker volume | `any` | `null` | no |
-| <a name="input_efs_volume"></a> [efs\_volume](#input\_efs\_volume) | efs volume | `any` | `null` | no |
+| <a name="input_efs_volume"></a> [efs\_volume](#input\_efs\_volume) | Single EFS volume (deprecated, use efs\_volumes instead) | `any` | `null` | no |
+| <a name="input_efs_volumes"></a> [efs\_volumes](#input\_efs\_volumes) | Map of EFS volumes to mount. Each key is a volume name, value contains volume configuration. | `map(any)` | `{}` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
 | <a name="input_external_dns"></a> [external\_dns](#input\_external\_dns) | when you dont have route53 zone, you can use external dns | `any` | `null` | no |
 | <a name="input_external_domain"></a> [external\_domain](#input\_external\_domain) | when true, zone\_id will be null for ACM and Route53 records will not be created | `bool` | `false` | no |
