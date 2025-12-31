@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.0.1...v1.1.0) (2025-12-31)
+
+
+### Features
+
+* **efs:** add support for multiple EFS volume mounts ([7f4ca18](https://github.com/zahornyak/terraform-aws-ecs-service/commit/7f4ca18d9e6f65ec424f376a353715e71efb609f))
+
 ## [1.0.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.0.0...v1.0.1) (2025-12-26)
 
 
