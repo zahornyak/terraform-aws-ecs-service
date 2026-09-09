@@ -5,28 +5,34 @@ module "service_container_definition" {
   source  = "registry.terraform.io/cloudposse/ecs-container-definition/aws"
   version = "~> 0.58"
 
-  container_image = lookup(each.value, "container_image", null)
-  container_name  = lookup(each.value, "container_name", null)
-  essential       = lookup(each.value, "essential", true)
+  container_image              = lookup(each.value, "container_image", null)
+  container_name               = lookup(each.value, "container_name", null)
+  essential                    = lookup(each.value, "essential", true)
+  container_cpu                = lookup(each.value, "container_cpu", null)
+  container_memory             = lookup(each.value, "container_memory", null)
+  container_memory_reservation = lookup(each.value, "container_memory_reservation", null)
 
-  #  container_definition = var.container_definition
+  command           = lookup(each.value, "command", [])
+  entrypoint        = lookup(each.value, "entrypoint", null)
+  working_directory = lookup(each.value, "working_directory", null)
+  user              = lookup(each.value, "user", null)
+  hostname          = lookup(each.value, "hostname", null)
 
-  container_cpu    = lookup(each.value, "container_cpu", null)
-  container_memory = lookup(each.value, "container_memory", null)
+  start_timeout = lookup(each.value, "start_timeout", null)
+  stop_timeout  = lookup(each.value, "stop_timeout", 5)
 
-  stop_timeout = lookup(each.value, "stop_timeout", 5)
   log_configuration = lookup(each.value, "log_configuration", null) != null ? lookup(each.value, "log_configuration", null) : {
     logDriver = "awslogs"
     options = {
       awslogs-group         = aws_cloudwatch_log_group.service_logs[each.key].name
-      awslogs-region        = data.aws_region.current.name
+      awslogs-region        = data.aws_region.current.region
       awslogs-stream-prefix = lookup(each.value, "container_name", null)
     }
   }
+  firelens_configuration = lookup(each.value, "firelens_configuration", null)
 
   # docker healthcheck
-  healthcheck = lookup(each.value, "healthcheck", null)
-
+  healthcheck          = lookup(each.value, "healthcheck", null)
   container_depends_on = lookup(each.value, "container_depends_on", null)
 
   port_mappings = lookup(each.value, "port_mappings", null) != null || lookup(each.value, "containerPort", null) == null ? lookup(each.value, "port_mappings", []) : [
@@ -42,6 +48,7 @@ module "service_container_definition" {
 
   environment_files = lookup(each.value, "environment_files", null)
   environment       = lookup(each.value, "environment", null)
+  map_environment   = lookup(each.value, "map_environment", null)
 
   secrets = lookup(each.value, "ssm_secrets", null) != null || lookup(each.value, "ssm_env_file", null) != null ? [
     for k, v in module.env_variables[each.key].parameters_arns : {
@@ -49,9 +56,27 @@ module "service_container_definition" {
       valueFrom = v
     }
   ] : lookup(each.value, "secrets", null)
+  map_secrets = lookup(each.value, "map_secrets", null)
 
-  command = lookup(each.value, "command", [])
+  readonly_root_filesystem = try(each.value.readonly_root_filesystem, each.value.readonlyRootFilesystem, false)
+  privileged               = lookup(each.value, "privileged", null)
+  interactive              = lookup(each.value, "interactive", null)
+  pseudo_terminal          = lookup(each.value, "pseudo_terminal", null)
+  disable_networking       = lookup(each.value, "disable_networking", null)
 
+  linux_parameters        = lookup(each.value, "linux_parameters", null)
+  docker_labels           = lookup(each.value, "docker_labels", null)
+  docker_security_options = lookup(each.value, "docker_security_options", null)
+  extra_hosts             = lookup(each.value, "extra_hosts", null)
+  dns_servers             = lookup(each.value, "dns_servers", null)
+  dns_search_domains      = lookup(each.value, "dns_search_domains", null)
+  links                   = lookup(each.value, "links", null)
+  ulimits                 = lookup(each.value, "ulimits", null)
+  system_controls         = lookup(each.value, "system_controls", null)
+  resource_requirements   = lookup(each.value, "resource_requirements", null)
+  repository_credentials  = lookup(each.value, "repository_credentials", null)
+
+  container_definition = lookup(each.value, "container_definition", {})
 }
 
 data "aws_caller_identity" "current" {}
@@ -387,7 +412,7 @@ data "aws_iam_policy_document" "ecs_task_exec_policy" {
     actions = [
       "ssm:GetParameters"
     ]
-    resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}/${var.service_name}/*"]
+    resources = ["arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}/${var.service_name}/*"]
   }
 }
 
@@ -586,9 +611,7 @@ resource "aws_service_discovery_service" "service" {
     }
   }
 
-  health_check_custom_config {
-    failure_threshold = 1
-  }
+  health_check_custom_config {}
 }
 
 

@@ -16,7 +16,7 @@ variable "service_memory" {
 variable "container_definitions" {
   type        = any
   default     = {}
-  description = "Custom container definitions."
+  description = "Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux_parameters, ulimits, readonly_root_filesystem) plus module helpers such as containerPort, ssm_secrets, and connect_to_lb."
 }
 
 variable "requires_compatibilities" {
