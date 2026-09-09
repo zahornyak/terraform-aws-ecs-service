@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.3.0...v1.4.0) (2026-09-09)
+
+
+### Features
+
+* enhance documentation and functionality for Fargate scratch volumes ([75b9566](https://github.com/zahornyak/terraform-aws-ecs-service/commit/75b9566146551ff39a94083142392f97a0abeba4))
+
 ## [1.3.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.2.1...v1.3.0) (2026-09-09)
 
 
