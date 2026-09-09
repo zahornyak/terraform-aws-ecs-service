@@ -611,7 +611,10 @@ resource "aws_service_discovery_service" "service" {
     }
   }
 
-  health_check_custom_config {}
+  health_check_custom_config {
+    # AWS always uses 1; omitting this makes the provider treat it as null and replace the service.
+    failure_threshold = 1
+  }
 }
 
 
