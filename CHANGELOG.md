@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.2.1...v1.3.0) (2026-09-09)
+
+
+### Features
+
+* add documentation for ECS service module ([254a3eb](https://github.com/zahornyak/terraform-aws-ecs-service/commit/254a3eba9fa69975149493eb42d652738408e137))
+
 ## [1.2.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.2.0...v1.2.1) (2026-09-09)
 
 
