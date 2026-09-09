@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.1.0...v1.2.0) (2026-09-09)
+
+
+### Features
+
+* enhance container definition with additional parameters ([ae81d6d](https://github.com/zahornyak/terraform-aws-ecs-service/commit/ae81d6d1f7071cf95bc84db309b95d37ba2a7411))
+
 ## [1.1.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.0.1...v1.1.0) (2025-12-31)
 
 
