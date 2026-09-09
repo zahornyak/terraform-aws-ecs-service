@@ -11,6 +11,7 @@ Creates a full ECS service stack: service, task definition, container definition
 - Set `connect_to_lb = true` and `service_domain` on a container to attach it to the load balancer and create a Route53 A record.
 - Set `vpc_cidr_block`, `route_53_zone_name`, or `lb_dns_name` only when those resources are not already created / passed in.
 - Public subnets need `assign_public_ip = true`.
+- Fargate scratch volumes: set `volumes` (names only) and container `mount_points`. Required if `readonly_root_filesystem = true`.
 
 AI agents: see [AGENTS.md](AGENTS.md) and [llms.txt](llms.txt).
 
@@ -25,6 +26,7 @@ AI agents: see [AGENTS.md](AGENTS.md) and [llms.txt](llms.txt).
 - [Capacity providers / placement](#capacity-providers--placement)
 - [Service discovery](#service-discovery)
 - [Extra IAM policies](#extra-iam-policies)
+- [Read-only root filesystem / scratch volumes](#read-only-root-filesystem--scratch-volumes)
 
 Runnable copies: [`examples/minimal`](examples/minimal), [`examples/main`](examples/main), [`examples/completed`](examples/completed).
 
@@ -283,6 +285,38 @@ module "ecs_service" {
 }
 ```
 
+### Read-only root filesystem / scratch volumes
+
+Fargate cannot use `docker_volume` or host paths. Name-only `volumes` are bind mounts on the task's ephemeral storage. Pair them with `mount_points`; `readonly_root_filesystem` without a writable mount typically fails at startup.
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+  # ...required vars...
+
+  volumes = ["tmp", "run"]
+
+  container_definitions = {
+    app = {
+      container_image          = "public.ecr.aws/nginx/nginx:latest"
+      container_name           = "app"
+      containerPort            = 80
+      readonly_root_filesystem = true
+      mount_points = [
+        {
+          sourceVolume  = "tmp"
+          containerPath = "/tmp"
+        },
+        {
+          sourceVolume  = "run"
+          containerPath = "/var/run"
+        },
+      ]
+    }
+  }
+}
+```
+
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
 
@@ -344,7 +378,7 @@ module "ecs_service" {
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
 | <a name="input_capacity_provider_strategy"></a> [capacity\_provider\_strategy](#input\_capacity\_provider\_strategy) | capacity\_provider\_strategy | `any` | `{}` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
-| <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. | `any` | `{}` | no |
+| <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux\_parameters, ulimits, readonly\_root\_filesystem) plus module helpers such as containerPort, ssm\_secrets, and connect\_to\_lb. | `any` | `{}` | no |
 | <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `null` | no |
 | <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `null` | no |
 | <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `null` | no |
@@ -395,6 +429,7 @@ module "ecs_service" {
 | <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
 | <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id. | `string` | n/a | yes |
+| <a name="input_volumes"></a> [volumes](#input\_volumes) | Name-only task volumes (Fargate scratch / bind mounts on ephemeral storage). Mount them from a container with mount\_points. An empty set emits no volume blocks. Names must not overlap efs\_volumes or docker\_volume. | `set(string)` | `[]` | no |
 
 ## Outputs
 

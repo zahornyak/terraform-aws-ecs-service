@@ -152,6 +152,28 @@ resource "aws_ecs_task_definition" "service" {
       }
     }
   }
+
+  # Name-only bind mounts: Fargate scratch space on the task's ephemeral storage.
+  dynamic "volume" {
+    for_each = var.volumes
+    content {
+      name = volume.value
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition = length(setintersection(
+        var.volumes,
+        toset(compact(concat(
+          [for k, v in var.efs_volumes : lookup(v, "name", k)],
+          var.efs_volume != null ? [try(tostring(var.efs_volume.name), "")] : [],
+          var.docker_volume != null ? [try(tostring(var.docker_volume.name), "")] : [],
+        )))
+      )) == 0
+      error_message = "volumes names must not overlap with efs_volumes, efs_volume, or docker_volume names."
+    }
+  }
 }
 
 # service creation

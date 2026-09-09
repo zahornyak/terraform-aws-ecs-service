@@ -55,6 +55,12 @@ Other useful:
 - mount_points, linux_parameters, ulimits, readonly_root_filesystem
 - Also accepts cloudposse/ecs-container-definition inputs
 
+Volumes (task-level, not inside container_definitions):
+- volumes — set of names for Fargate scratch bind mounts (ephemeral storage). Empty set emits nothing.
+- Pair each name with container mount_points (sourceVolume + containerPath).
+- efs_volumes is the current EFS API; efs_volume is deprecated. docker_volume is EC2-only.
+- Volume names must not overlap across volumes, efs_volumes, and docker_volume.
+
 ## Decision rules
 
 1. Worker / internal service: do not set connect_to_lb, lb_arn, or lb_listener_arn.
@@ -63,7 +69,8 @@ Other useful:
 4. Public subnets: assign_public_ip = true. Private subnets: leave false (NAT or VPC endpoints assumed).
 5. Do not invent module variables. Inputs are listed in README terraform-docs tables.
 6. task_role_policy_json / task_exec_role_policy_json take a map of name => JSON string (from aws_iam_policy_document), not policy ARNs.
-7. efs_volumes is the current API; efs_volume is deprecated.
+7. efs_volumes is the current EFS API; efs_volume is deprecated.
+8. Fargate scratch / readonly root: set volumes (names) and container mount_points. Do not use docker_volume. linux_parameters.tmpfs is RAM-backed (not ephemeral disk).
 
 ## Common mistakes
 
@@ -72,6 +79,7 @@ Other useful:
 - Public subnets without assign_public_ip.
 - Passing vpc_cidr_block / route_53_zone_name / lb_dns_name when vpc_id / zone_id / lb_arn already exist.
 - Using task_role_policy_arns (removed); use task_role_policy_json.
+- Setting readonly_root_filesystem without volumes + mount_points (container has nowhere writable).
 
 ## Minimum (no load balancer)
 
@@ -127,6 +135,30 @@ module "ecs_service" {
       container_image = "nginx:latest"
       container_name  = "backend"
       containerPort   = 80
+    }
+  }
+}
+```
+
+## Read-only root / Fargate scratch
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+  # ...required vars...
+
+  volumes = ["tmp", "run"]
+
+  container_definitions = {
+    app = {
+      container_image          = "nginx:latest"
+      container_name           = "app"
+      containerPort            = 80
+      readonly_root_filesystem = true
+      mount_points = [
+        { sourceVolume = "tmp", containerPath = "/tmp" },
+        { sourceVolume = "run", containerPath = "/var/run" },
+      ]
     }
   }
 }

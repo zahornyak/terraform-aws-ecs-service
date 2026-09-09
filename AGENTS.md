@@ -36,6 +36,7 @@ Do not invent inputs. If a setting is not in the README inputs table, it is not 
 | Extra IAM for the app | `task_role_policy_json` = map of name => `data.aws_iam_policy_document.*.json` |
 | Extra IAM for ECS agent | `task_exec_role_policy_json` (same map-of-JSON shape) |
 | Cloud Map | `create_service_discovery = true`, `discovery_registry_id` |
+| Read-only root filesystem | Module `volumes` (set of names) plus container `readonly_root_filesystem = true` and `mount_points`. Do not use `docker_volume` or `linux_parameters.tmpfs` for Fargate scratch. |
 
 ## Do not
 
@@ -44,6 +45,7 @@ Do not invent inputs. If a setting is not in the README inputs table, it is not 
 - Pass `vpc_cidr_block`, `route_53_zone_name`, or `lb_dns_name` when `vpc_id`, `route_53_zone_id`, or `lb_arn` already exist unless a lookup is actually needed.
 - Set `service_domain` without `connect_to_lb = true` if the goal is ALB+DNS.
 - Forget `assign_public_ip` on public subnets.
+- Set `readonly_root_filesystem` without `volumes` + `mount_points` (container has nowhere writable and fails at startup).
 
 ## Examples to copy
 

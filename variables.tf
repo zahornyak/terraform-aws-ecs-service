@@ -287,6 +287,12 @@ variable "protocol_version" {
   default     = null
 }
 
+variable "volumes" {
+  description = "Name-only task volumes (Fargate scratch / bind mounts on ephemeral storage). Mount them from a container with mount_points. An empty set emits no volume blocks. Names must not overlap efs_volumes or docker_volume."
+  type        = set(string)
+  default     = []
+}
+
 variable "docker_volume" {
   description = "docker volume"
   type        = any
