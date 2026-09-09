@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.2.0...v1.2.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* add failure_threshold to health_check_custom_config ([9be2e2b](https://github.com/zahornyak/terraform-aws-ecs-service/commit/9be2e2bb5eb98f7d9a946b293e64534076272785))
+
 ## [1.2.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.1.0...v1.2.0) (2026-09-09)
 
 
