@@ -1,0 +1,19 @@
+# terraform-aws-ecs-service
+
+> Terraform module that creates a full AWS ECS Fargate service stack (service, task definition, containers, SG, logs, IAM; optional ALB, ACM, Route53, autoscaling).
+
+Registry source: `zahornyak/ecs-service/aws`  
+Terraform >= 1.4, AWS provider >= 4.37  
+GitHub: https://github.com/zahornyak/terraform-aws-ecs-service
+
+## Docs
+
+- [Full agent contract](llms-full.txt): required inputs, container keys, decision rules, copy-paste examples
+- [Agent instructions](AGENTS.md): when to use this module and how to generate valid HCL
+- [README](README.md): human docs and terraform-docs tables
+
+## Examples
+
+- [Minimum (no load balancer)](examples/minimal/README.md)
+- [ALB + DNS + SSL](examples/main/README.md)
+- [Completed stack with IAM and SSM env file](examples/completed/README.md)

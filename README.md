@@ -1,321 +1,226 @@
 # Terraform AWS ECS service stack creation
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/zahornyak/terraform-aws-ecs-service)
 
-This module is for whole ECS service stack creation: service, task definition, container definition, alb listener rule, target group, route53 record, security group etc.
+Creates a full ECS service stack: service, task definition, container definitions, security group, CloudWatch logs, and IAM roles. Optionally also creates an ALB target group and listener rule, ACM certificate, Route53 record, autoscaling, and service discovery.
 
-### Important note:
-- *Use `connect_to_lb` and `service_domain` to connect service container to load balancer and create route53 A record*
-- *Use `vpc_cidr_block`, `route_53_zone_name`, `lb_dns_name` only when you dont have previously created resources*
+**Source:** `zahornyak/ecs-service/aws`
 
+**Required:** `environment`, `vpc_id`, `service_subnets`, `cluster_name`, `service_name`, `service_cpu`, `service_memory`, and at least one `container_definitions` entry.
 
-## Example
+### Notes
+- Set `connect_to_lb = true` and `service_domain` on a container to attach it to the load balancer and create a Route53 A record.
+- Set `vpc_cidr_block`, `route_53_zone_name`, or `lb_dns_name` only when those resources are not already created / passed in.
+- Public subnets need `assign_public_ip = true`.
 
-### Single container
+AI agents: see [AGENTS.md](AGENTS.md) and [llms.txt](llms.txt).
+
+## Examples
+
+- [Minimum (no load balancer)](#minimum-no-load-balancer)
+- [ALB + DNS + SSL](#alb--dns--ssl)
+- [Multiple containers](#multiple-containers)
+- [Sidecar without load balancer](#sidecar-without-load-balancer)
+- [SSM secrets / .env](#ssm-secrets--env)
+- [Autoscaling](#autoscaling)
+- [Capacity providers / placement](#capacity-providers--placement)
+- [Service discovery](#service-discovery)
+- [Extra IAM policies](#extra-iam-policies)
+
+Runnable copies: [`examples/minimal`](examples/minimal), [`examples/main`](examples/main), [`examples/completed`](examples/completed).
+
+### Minimum (no load balancer)
+
 ```hcl
 module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
 
-  environment        = "production"
-  vpc_id             = "vpc-080fd3099892"
-  vpc_cidr_block     = "10.0.0.0/16" # use when you dont have previously created vpc
-  service_subnets    = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
-  # assign_public_ip = true # if you are using public subnets
-  cluster_name       = "production-cluster"
-  route_53_zone_id   = "Z01006347593463S0ZFL7A2" # use when you dont have previously created Route53 zone
-  route_53_zone_name = "example.com" 
-  lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
-  lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
-  lb_dns_name        = "my-loadbalancer-1234567890.us-west-2.elb.amazonaws.com" # use when you dont have previously created load balancer
-  create_ssl         = true # requests ssl for service and attach it to listener rule
+  environment     = "dev"
+  vpc_id          = "vpc-xxxxxxxx"
+  service_subnets = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+  cluster_name    = "dev-cluster"
 
-  service_name  = "backend"
-  desired_count = 1
+  service_name   = "worker"
+  service_cpu    = 256
+  service_memory = 512
+  desired_count  = 1
 
   container_definitions = {
-    proxy = {
-      service_domain   = "api-test"
-      connect_to_lb    = true
-      container_image  = "nginx:latest"
-      container_name   = "backend"
-      container_cpu    = 256
-      container_memory = 256
-      containerPort    = 80
-      environment      = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
+    app = {
+      container_image = "public.ecr.aws/nginx/nginx:latest"
+      container_name  = "app"
+      containerPort   = 80
     }
   }
-
-  service_memory = 1024
-  service_cpu    = 512
 }
 ```
 
-### Multiple containers
+### ALB + DNS + SSL
+
 ```hcl
 module "ecs_service" {
-  source  = "zahornyak/ecs-service/aws"
+  source = "zahornyak/ecs-service/aws"
 
   environment     = "production"
   vpc_id          = "vpc-080fd3099892"
   service_subnets = ["subnet-0c264c7154cb", "subnet-09e0d8b22e2"]
-  # assign_public_ip = true # if you are using public subnets
-  cluster_name     = "production-cluster"
-  route_53_zone_id = "Z01006347593463S0ZFL7A2"
-  lb_arn           = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
-  lb_listener_arn  = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
-  create_ssl       = true # requests ssl for service and attach it to listener rule
+  cluster_name    = "production-cluster"
 
-  service_name  = "backend"
-  desired_count = 1
+  route_53_zone_id   = "Z01006347593463S0ZFL7A2"
+  route_53_zone_name = "example.com"
+  lb_arn             = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:loadbalancer/app/plugin-development-alb/46555556595fd4b2"
+  lb_listener_arn    = "arn:aws:elasticloadbalancing:eu-central-1:1234567890:listener/app/plugin-development-alb/46555556595fd4b2/83d6940f8c9f02db"
+  create_ssl         = true
+
+  service_name   = "backend"
+  service_cpu    = 512
+  service_memory = 1024
+  desired_count  = 1
 
   container_definitions = {
-    proxy = {
-      service_domain   = "api-test"
-      connect_to_lb    = true
-      container_image  = "nginx:latest"
-      container_name   = "proxy"
-      container_cpu    = 256
-      container_memory = 256
-      containerPort    = 80
-      environment = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
+    app = {
+      service_domain  = "api-test"
+      connect_to_lb   = true
+      container_image = "nginx:latest"
+      container_name  = "backend"
+      containerPort   = 80
     }
-    
-    backend = {
-      container_image  = "nginx:latest"
-      container_name   = "backend"
-      container_cpu    = 256
-      container_memory = 256
-      container_depends_on = [
-        {
-          containerName = "proxy"
-          condition     = "START"
-        }
-      ]
-      containerPort = 3000
-      healthcheck = {
-        retries     = 5
-        command     = ["CMD-SHELL", "curl -f http://localhost:3000"]
-        timeout     = 15
-        interval    = 30
-        startPeriod = 10
-      }
-      environment = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
-    }
-    
-    admin = {
-      service_domain   = "api-worker"
-      connect_to_lb    = true
-      container_image  = "nginx:latest"
-      container_name   = "worker"
-      container_cpu    = 256
-      container_memory = 256
-      container_depends_on = [
-        {
-          containerName = "backend"
-          condition     = "START"
-        }
-      ]
-      containerPort = 3050
-      healthcheck = {
-        retries     = 5
-        command     = ["CMD-SHELL", "curl -f http://localhost:3050"]
-        timeout     = 15
-        interval    = 30
-        startPeriod = 10
-      }
-      environment = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
-    }
-    }
-  service_memory  = 1024
-  service_cpu     = 512
+  }
 }
 ```
 
-### No load balancer
+### Multiple containers
+
 ```hcl
 module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
 
-  environment     = var.environment
-  vpc_id          = var.vpc_id
-  service_subnets = var.subnets
-  vpc_cidr_block  = var.vpc_cidr_block
+  # ...required vars...
+  cluster_name     = "production-cluster"
+  route_53_zone_id = "Z01006347593463S0ZFL7A2"
+  lb_arn           = "arn:aws:elasticloadbalancing:..."
+  lb_listener_arn  = "arn:aws:elasticloadbalancing:.../listener/..."
+  create_ssl       = true
 
-  # assign_public_ip = true # if you are using public subnets
-  cluster_name = aws_ecs_cluster.ecs_cluster.name
-
-  service_name  = "backend"
-  desired_count = 1
+  service_name   = "backend"
+  service_cpu    = 512
+  service_memory = 1024
 
   container_definitions = {
     proxy = {
-      container_image  = "nginx:latest"
-      container_name   = "proxy"
-      container_cpu    = 256
-      container_memory = 256
-      containerPort    = 80
-      environment      = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
+      service_domain  = "api-test"
+      connect_to_lb   = true
+      container_image = "nginx:latest"
+      container_name  = "proxy"
+      containerPort   = 80
     }
-    
+
     backend = {
-      container_image      = "nginx:latest"
-      container_name       = "backend"
-      container_cpu        = 256
-      container_memory     = 256
+      container_image = "nginx:latest"
+      container_name  = "backend"
+      containerPort   = 3000
       container_depends_on = [
-        {
-          containerName = "proxy"
-          condition     = "START"
-        }
+        { containerName = "proxy", condition = "START" }
       ]
-      containerPort = 3000
-      healthcheck   = {
+      healthcheck = {
         retries     = 5
         command     = ["CMD-SHELL", "curl -f http://localhost:3000"]
         timeout     = 15
         interval    = 30
         startPeriod = 10
       }
-      environment = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
     }
   }
+}
+```
 
-  service_memory = 1024
+### Sidecar without load balancer
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+
+  # ...required vars...
+  service_name   = "backend"
   service_cpu    = 512
+  service_memory = 1024
+
+  container_definitions = {
+    proxy = {
+      container_image = "nginx:latest"
+      container_name  = "proxy"
+      containerPort   = 80
+    }
+
+    backend = {
+      container_image = "nginx:latest"
+      container_name  = "backend"
+      containerPort   = 3000
+      container_depends_on = [
+        { containerName = "proxy", condition = "START" }
+      ]
+    }
+  }
 }
 ```
 
+### SSM secrets / .env
 
-### Example of using environment valiables for containers(using ssm_secrets which creates ssm parameters and puts them into container definition)
+Creates SSM parameters and injects them as container secrets.
+
 ```hcl
-module "ecs-service" {
-  source  = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+  # ...required vars...
+
   container_definitions = {
-    proxy = {
-      container_image  = "nginx:latest"
-      container_name   = "proxy"
-      container_cpu    = 256
-      container_memory = 256
-      containerPort    = 80
-      environment      = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
+    app = {
+      container_image = "nginx:latest"
+      container_name  = "app"
+      containerPort   = 80
       ssm_secrets = {
-        DEBUG = {
-          value = "true"
-        }
+        DEBUG = { value = "true" }
       }
+      # or: ssm_env_file = "./.env"
     }
   }
 }
 ```
 
-### Example of using environment valiables for containers(using ssm_env_file which parses and creates ssm parameters and puts them into container definition)
-```hcl
-module "ecs-service" {
-  source  = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
-  container_definitions = {
-    proxy = {
-      container_image  = "nginx:latest"
-      container_name   = "proxy"
-      container_cpu    = 256
-      container_memory = 256
-      containerPort    = 80
-      environment      = [
-        {
-          "name"  = "foo"
-          "value" = "bar"
-        }
-      ]
-      ssm_env_file = "./env"
-    }
-  }
-}
+`.env` example:
+
 ```
-\
-.env example
-```commandline
 LOG_LEVEL=verbose
 LOG_TARGET=console
-LOG_FORMAT=json
-
 CRONJOB_ENABLED=true
-DEPLOYMENT=develop
 ```
 
-### Autoscaling with scaling values
+### Autoscaling
+
 ```hcl
-module "ecs-service" {
+module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
+  # ...required vars...
 
   min_service_tasks = 1
   max_service_tasks = 6
 
-  cpu_scaling_target_value = 40
-  cpu_scale_in_cooldown    = 350
-  cpu_scale_out_cooldown   = 200
-
+  cpu_scaling_target_value    = 40
+  cpu_scale_in_cooldown       = 350
+  cpu_scale_out_cooldown      = 200
   memory_scaling_target_value = 90
   memory_scale_in_cooldown    = 350
   memory_scale_out_cooldown   = 300
 }
 ```
-### Autoscaling with scaling values (no memory or cpu scaling)
+
+CPU-only: omit the `memory_*` variables.
+
+### Capacity providers / placement
+
 ```hcl
-module "ecs-service" {
+module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
-
-  min_service_tasks = 1
-  max_service_tasks = 6
-
-  cpu_scaling_target_value = 40
-  cpu_scale_in_cooldown    = 350
-  cpu_scale_out_cooldown   = 200
-  
-}
-```
-
-### Capacity provider strategy, ordered placement, placement_constraints strategy example configuration
-```hcl
-module "ecs-service" {
-  source = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
+  # ...required vars...
 
   capacity_provider_strategy = {
     main = {
@@ -325,14 +230,12 @@ module "ecs-service" {
     }
   }
 
-
   ordered_placement_strategy = {
     test = {
       type  = "binpack"
       field = "cpu"
     }
   }
-
 
   placement_constraints = {
     example = {
@@ -343,64 +246,42 @@ module "ecs-service" {
 }
 ```
 
-### Service discovery example
+### Service discovery
+
 ```hcl
-module "ecs-service" {
+module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
+  # ...required vars...
 
   create_service_discovery = true
-  discovery_registry_id    = "service_discovery_registry_id"
-  
+  discovery_registry_id    = "ns-xxxxxxxx"
 }
 ```
 
-### IAM Role Policies example
+### Extra IAM policies
+
 ```hcl
 data "aws_iam_policy_document" "s3_access" {
   statement {
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket"
-    ]
-    resources = [
-      "arn:aws:s3:::my-bucket/*",
-      "arn:aws:s3:::my-bucket"
-    ]
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:ListBucket"]
+    resources = ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*"]
   }
 }
 
-data "aws_iam_policy_document" "secrets_manager_ro" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue",
-      "secretsmanager:DescribeSecret"
-    ]
-    resources = ["*"]
-  }
-}
-
-module "ecs-service" {
+module "ecs_service" {
   source = "zahornyak/ecs-service/aws"
-  # insert the 7 required variables here
+  # ...required vars...
 
-  # Task role policies (for the application running in the container)
-  # Map format: policy names (keys) to policy JSON documents (values)
-  # Policy JSON can come from data.aws_iam_policy_document resources
   task_role_policy_json = {
-    secrets_manager_ro = data.aws_iam_policy_document.secrets_manager_ro.json
-    s3_access          = data.aws_iam_policy_document.s3_access.json
+    s3_access = data.aws_iam_policy_document.s3_access.json
   }
 
-  # Task execution role policies (for ECS to pull images, write logs, etc.)
   task_exec_role_policy_json = {
-    cloudwatch_logs = data.aws_iam_policy_document.cloudwatch_logs.json
+    extra = data.aws_iam_policy_document.task_exec_extra.json
   }
 }
 ```
-
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements

@@ -1,0 +1,137 @@
+# terraform-aws-ecs-service — agent contract
+
+Use this module instead of hand-rolling aws_ecs_service + task definition + SG + ALB wiring.
+
+source  = "zahornyak/ecs-service/aws"
+# pin a version in consumer modules, e.g. version = "~> 1.2"
+terraform >= 1.4
+hashicorp/aws >= 4.37
+
+## Required inputs
+
+environment, vpc_id, service_subnets, cluster_name, service_name, service_cpu, service_memory
+Plus at least one container_definitions entry with container_image, container_name, and usually containerPort.
+
+## Created by default
+
+ECS service (Fargate, awsvpc), task definition, container definitions, CloudWatch log groups, task role + task execution role, security group (when containerPort is set).
+
+## Created only when opted in
+
+- ALB target group + listener rule: container connect_to_lb = true (needs lb_listener_arn)
+- ACM cert on listener: connect_to_lb = true and create_ssl = true (default true)
+- Route53 A alias: connect_to_lb = true, service_domain (or full_service_domain), and external_dns/external_domain not set
+- Autoscaling: min_service_tasks and/or max_service_tasks
+- Service discovery: create_service_discovery = true + discovery_registry_id
+- SSM parameters as secrets: container ssm_secrets or ssm_env_file
+
+## Lookup-only vars (do not set if the resource already exists and is passed in)
+
+vpc_cidr_block — only if VPC is not already known to the module via vpc_id lookup
+route_53_zone_name — only if zone id is not passed (module looks up by name)
+lb_dns_name / lb_zone_id — only if lb_arn is not passed (module looks up the LB)
+
+## container_definitions keys
+
+Required per container:
+- container_image, container_name
+- containerPort — SG ingress + ALB target group port. Prefer this over port_mappings unless you need multiple mappings.
+
+Load balancer / DNS:
+- connect_to_lb (bool) — attach this container to ALB
+- service_domain — hostname label; record becomes {service_domain}.{route_53_zone_name}
+- full_service_domain — use instead of service_domain when the FQDN is already complete
+- path_pattern, http_header / http_header_name, http_request_method — extra listener-rule conditions
+- create_route53_records — default true; set false to skip DNS for that container
+
+Secrets:
+- environment — list of { name, value }
+- ssm_secrets — map of NAME = { value = "..." }; module creates SSM params and injects as secrets
+- ssm_env_file — path to KEY=VALUE file; same as ssm_secrets
+- parameter_prefix (module var) — SSM path prefix; default /{environment}/{service_name}/{container_name}/
+
+Other useful:
+- container_cpu, container_memory, essential, command, entrypoint, healthcheck, container_depends_on
+- mount_points, linux_parameters, ulimits, readonly_root_filesystem
+- Also accepts cloudposse/ecs-container-definition inputs
+
+## Decision rules
+
+1. Worker / internal service: do not set connect_to_lb, lb_arn, or lb_listener_arn.
+2. Public HTTP(S) service: connect_to_lb = true, pass existing lb_arn + lb_listener_arn + route_53_zone_id + route_53_zone_name, set service_domain.
+3. create_ssl defaults to true. Set false if the listener already has the cert you need.
+4. Public subnets: assign_public_ip = true. Private subnets: leave false (NAT or VPC endpoints assumed).
+5. Do not invent module variables. Inputs are listed in README terraform-docs tables.
+6. task_role_policy_json / task_exec_role_policy_json take a map of name => JSON string (from aws_iam_policy_document), not policy ARNs.
+7. efs_volumes is the current API; efs_volume is deprecated.
+
+## Common mistakes
+
+- Forgetting connect_to_lb = true while setting service_domain (no target group / listener rule).
+- Setting service_domain without route_53_zone_name (FQDN cannot be built).
+- Public subnets without assign_public_ip.
+- Passing vpc_cidr_block / route_53_zone_name / lb_dns_name when vpc_id / zone_id / lb_arn already exist.
+- Using task_role_policy_arns (removed); use task_role_policy_json.
+
+## Minimum (no load balancer)
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+
+  environment     = "dev"
+  vpc_id          = var.vpc_id
+  service_subnets = var.private_subnet_ids
+  cluster_name    = var.cluster_name
+
+  service_name   = "worker"
+  service_cpu    = 256
+  service_memory = 512
+  desired_count  = 1
+
+  container_definitions = {
+    app = {
+      container_image = "public.ecr.aws/nginx/nginx:latest"
+      container_name  = "app"
+      containerPort   = 80
+    }
+  }
+}
+```
+
+## ALB + DNS + SSL
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+
+  environment        = "production"
+  vpc_id             = var.vpc_id
+  service_subnets    = var.private_subnet_ids
+  cluster_name       = var.cluster_name
+  route_53_zone_id   = var.zone_id
+  route_53_zone_name = "example.com"
+  lb_arn             = var.lb_arn
+  lb_listener_arn    = var.https_listener_arn
+  create_ssl         = true
+
+  service_name   = "backend"
+  service_cpu    = 512
+  service_memory = 1024
+  desired_count  = 1
+
+  container_definitions = {
+    app = {
+      service_domain  = "api"
+      connect_to_lb   = true
+      container_image = "nginx:latest"
+      container_name  = "backend"
+      containerPort   = 80
+    }
+  }
+}
+```
+
+## Useful outputs
+
+ecs_service_arn, ecs_service_name, ecs_task_definition_arn, ecs_task_role_arn, ecs_task_execution_role_arn, target_group_arns, service_container_sg_ids, records_lb_names, acm_arn
