@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.5.0...v1.5.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* update IAM policy resource references for Secrets Manager ([f5b73e1](https://github.com/zahornyak/terraform-aws-ecs-service/commit/f5b73e1509ea4101ee758bd18d90610293c636b8))
+
 ## [1.5.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.4.0...v1.5.0) (2026-11-04)
 
 
