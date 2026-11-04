@@ -241,15 +241,28 @@ locals {
     if try(v.secrets_manager_secrets, null) != null || try(v.secrets_manager_env_file, null) != null || try(v.secrets_manager_json, null) != null || try(v.secrets_manager_json_env_file, null) != null
   ]) > 0
 
+  # Secret names use path-style prefixes (often leading "/"). IAM ARNs must match that
+  # (e.g. secret:/dev/app/env-XXXX), not a trimmed form without the slash.
   sm_iam_prefix_wildcards = distinct([
     for container_key, def in var.container_definitions :
-    "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:${trimprefix(local.secret_name_prefix_by_container[container_key], "/")}*"
+    "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:${local.secret_name_prefix_by_container[container_key]}*"
     if try(def.secrets_manager_secrets, null) != null || try(def.secrets_manager_env_file, null) != null || try(def.secrets_manager_json, null) != null || try(def.secrets_manager_json_env_file, null) != null
   ])
 
   sm_iam_ref_arns = distinct(concat(
     [for k, v in local.sm_ref_secret_arn : v],
     [for k, v in local.sm_json_secret_arn : v if try(local.sm_json_by_container[k].managed, true) == false]
+  ))
+
+  sm_iam_created_secret_arns = concat(
+    [for k, v in aws_secretsmanager_secret.container_env : v.arn],
+    [for k, v in aws_secretsmanager_secret.container_json : v.arn]
+  )
+
+  sm_iam_secret_resources = distinct(concat(
+    local.sm_iam_prefix_wildcards,
+    local.sm_iam_ref_arns,
+    local.sm_iam_created_secret_arns
   ))
 
   secrets_manager_created_arns = {

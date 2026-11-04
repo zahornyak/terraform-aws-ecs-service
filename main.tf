@@ -441,7 +441,7 @@ data "aws_iam_policy_document" "ecs_task_exec_policy" {
       actions = [
         "secretsmanager:GetSecretValue"
       ]
-      resources = distinct(concat(local.sm_iam_prefix_wildcards, local.sm_iam_ref_arns))
+      resources = local.sm_iam_secret_resources
     }
   }
 }
