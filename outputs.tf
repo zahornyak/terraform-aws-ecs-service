@@ -73,3 +73,13 @@ output "service_container_sg_ids" {
   description = "service container sg ids"
 }
 
+output "secrets_manager_created_arns" {
+  value       = local.secrets_manager_created_arns
+  description = "ARNs of Secrets Manager secrets created by the module (keys: {container_key}/{env_name})."
+}
+
+output "secrets_manager_json_secret_arns" {
+  value       = local.secrets_manager_json_secret_arns
+  description = "ARNs of shared JSON Secrets Manager secrets per container (secrets_manager_json)."
+}
+

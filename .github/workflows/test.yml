@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  pull_request:
+    paths:
+      - "**/*.tf"
+      - "**/*.tftest.hcl"
+      - "tests/**"
+      - ".github/workflows/test.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.tf"
+      - "**/*.tftest.hcl"
+      - "tests/**"
+      - ".github/workflows/test.yml"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.9"
+
+      - name: Run module tests
+        run: ./tests/run.sh

@@ -22,6 +22,7 @@ AI agents: see [AGENTS.md](AGENTS.md) and [llms.txt](llms.txt).
 - [Multiple containers](#multiple-containers)
 - [Sidecar without load balancer](#sidecar-without-load-balancer)
 - [SSM secrets / .env](#ssm-secrets--env)
+- [Secrets Manager secrets / .env](#secrets-manager-secrets--env)
 - [Autoscaling](#autoscaling)
 - [Capacity providers / placement](#capacity-providers--placement)
 - [Service discovery](#service-discovery)
@@ -196,6 +197,108 @@ LOG_TARGET=console
 CRONJOB_ENABLED=true
 ```
 
+### Secrets Manager secrets / .env
+
+Creates Secrets Manager secrets (or references existing ones) and injects them as container secrets. Task execution IAM receives `secretsmanager:GetSecretValue` on created prefix wildcards and referenced ARNs. CMK-encrypted secrets need `kms:Decrypt` via `task_exec_role_policy_json`.
+
+**Create** (like SSM):
+
+```hcl
+module "ecs_service" {
+  source = "zahornyak/ecs-service/aws"
+  # ...required vars...
+
+  container_definitions = {
+    app = {
+      container_image = "nginx:latest"
+      container_name  = "app"
+      containerPort   = 80
+      secrets_manager_secrets = {
+        DEBUG = { value = "true" }
+      }
+      # or: secrets_manager_env_file = "./.env"
+    }
+  }
+}
+```
+
+**Reference an existing secret** (whole secret or JSON key via `:KEY::`):
+
+```hcl
+secrets_manager_secrets = {
+  DATABASE_URL = {
+    secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:app/prod/config-AbCdEf"
+    json_key   = "DATABASE_URL"
+  }
+}
+```
+
+**One JSON secret, many env vars** (each ECS secret uses `arn:...:KEY::`):
+
+```hcl
+container_definitions = {
+  app = {
+    # ...
+    secrets_manager_json = {
+      values = {
+        DEBUG     = "true"
+        LOG_LEVEL = "verbose"
+      }
+      # keys only in AWS (added manually later); same secret ARN, json key = env name
+      keys          = ["MANUAL_KEY"]
+      manage_value  = false
+      # secret_name = "/production/backend/app/env"  # default: .../{container_name}/env
+    }
+    # or: secrets_manager_json_env_file = "./.env"  # with secrets_manager_json.values omitted
+  }
+}
+```
+
+Reference an existing JSON secret (`managed = false`):
+
+```hcl
+secrets_manager_json = {
+  managed     = false
+  secret_name = "/production/backend/app/env"
+  keys        = ["DEBUG", "LOG_LEVEL", "MANUAL_KEY"]
+  map = { CONTAINER_VAR = "json_key_in_secret" } # optional when env name != JSON key
+}
+```
+
+SSM and Secrets Manager entries on the same container are merged with any raw `secrets` list. Avoid duplicate env var names across sources.
+
+**Stop managing secret values in Terraform** (rotate or edit in the AWS console; ECS wiring unchanged):
+
+```hcl
+secrets_manager_secrets = {
+  DEBUG = { value = "true", manage_value = false }
+}
+```
+
+After the first apply, Terraform keeps the secret resource but ignores changes to `secret_string`.
+
+**Secrets created outside Terraform** (manual console/CLI), including ones you add later under the same name prefix:
+
+```hcl
+secrets_manager_secrets = {
+  MANUAL_KEY = {
+    managed     = false
+    secret_name = "/production/backend/app/MANUAL_KEY"
+  }
+}
+```
+
+Task execution IAM includes a prefix wildcard for any container using `secrets_manager_secrets` or `secrets_manager_env_file`, so secrets under the default `/{environment}/{service_name}/{container_name}/` path are allowed when referenced in config. You can also pass `secret_arn` (and optional `json_key`) instead of `secret_name`.
+
+**Fully remove a secret from Terraform management** (keep the secret in AWS): switch the entry to `managed = false` with `secret_arn` or `secret_name`, then remove the old resources from state before apply:
+
+```shell
+terraform state rm 'module.ecs_service.aws_secretsmanager_secret.container_env["app/DEBUG"]'
+terraform state rm 'module.ecs_service.aws_secretsmanager_secret_version.container_env["app/DEBUG"]'
+```
+
+Use the `container_env_unlocked_value` resource address instead of `container_env` if that secret used `manage_value = false`.
+
 ### Autoscaling
 
 ```hcl
@@ -362,6 +465,12 @@ module "ecs_service" {
 | [aws_lb_listener_rule.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
 | [aws_route53_record.lb_records](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
+| [aws_secretsmanager_secret.container_env](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret.container_json](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret_version.container_env](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_env_unlocked_value](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_json](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_json_unlocked_value](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
 | [aws_service_discovery_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/service_discovery_service) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.ecs_task_exec_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -369,6 +478,8 @@ module "ecs_service" {
 | [aws_lb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_route53_zone.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) | data source |
+| [aws_secretsmanager_secret.json_ref_by_name](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
+| [aws_secretsmanager_secret.ref_by_name](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
 | [aws_vpc.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc) | data source |
 
 ## Inputs
@@ -378,7 +489,7 @@ module "ecs_service" {
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
 | <a name="input_capacity_provider_strategy"></a> [capacity\_provider\_strategy](#input\_capacity\_provider\_strategy) | capacity\_provider\_strategy | `any` | `{}` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
-| <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux\_parameters, ulimits, readonly\_root\_filesystem) plus module helpers such as containerPort, ssm\_secrets, and connect\_to\_lb. | `any` | `{}` | no |
+| <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux\_parameters, ulimits, readonly\_root\_filesystem) plus module helpers such as containerPort, ssm\_secrets, secrets\_manager\_secrets, and connect\_to\_lb. | `any` | `{}` | no |
 | <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `null` | no |
 | <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `null` | no |
 | <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `null` | no |
@@ -418,6 +529,7 @@ module "ecs_service" {
 | <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | `null` | no |
 | <a name="input_route_53_zone_name"></a> [route\_53\_zone\_name](#input\_route\_53\_zone\_name) | route 53 zone name. Use only when you dont have previously created Route53 zone | `string` | `null` | no |
 | <a name="input_runtime_platform"></a> [runtime\_platform](#input\_runtime\_platform) | runtime platform | `any` | `null` | no |
+| <a name="input_secret_name_prefix"></a> [secret\_name\_prefix](#input\_secret\_name\_prefix) | Prefix for Secrets Manager secrets created by the module. For example '/develop/service/'. Secret 'DEBUG' becomes '/develop/service/DEBUG'. Defaults to /{environment}/{service\_name}/{container\_name}/ per container. | `string` | `null` | no |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | additional security\_groups for service | `list(string)` | `[]` | no |
 | <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
 | <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
@@ -427,9 +539,9 @@ module "ecs_service" {
 | <a name="input_task_role_policy_json"></a> [task\_role\_policy\_json](#input\_task\_role\_policy\_json) | Additional inline policies for task role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy\_name' = 'policy\_json'}. Policy JSON can come from data.aws\_iam\_policy\_document resources. | `map(string)` | `{}` | no |
 | <a name="input_tg_protocol"></a> [tg\_protocol](#input\_tg\_protocol) | target group protocol(for example 'HTTP' or 'TCP') | `string` | `"HTTP"` | no |
 | <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
+| <a name="input_volumes"></a> [volumes](#input\_volumes) | Name-only task volumes (Fargate scratch / bind mounts on ephemeral storage). Mount them from a container with mount\_points. An empty set emits no volume blocks. Names must not overlap efs\_volumes or docker\_volume. | `set(string)` | `[]` | no |
 | <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id. | `string` | n/a | yes |
-| <a name="input_volumes"></a> [volumes](#input\_volumes) | Name-only task volumes (Fargate scratch / bind mounts on ephemeral storage). Mount them from a container with mount\_points. An empty set emits no volume blocks. Names must not overlap efs\_volumes or docker\_volume. | `set(string)` | `[]` | no |
 
 ## Outputs
 
@@ -448,6 +560,154 @@ module "ecs_service" {
 | <a name="output_lb_listener_certificate"></a> [lb\_listener\_certificate](#output\_lb\_listener\_certificate) | lb listener certificate |
 | <a name="output_lb_listener_rule_arns"></a> [lb\_listener\_rule\_arns](#output\_lb\_listener\_rule\_arns) | load balancer listener rules arns |
 | <a name="output_records_lb_names"></a> [records\_lb\_names](#output\_records\_lb\_names) | load balancers records names |
+| <a name="output_secrets_manager_created_arns"></a> [secrets\_manager\_created\_arns](#output\_secrets\_manager\_created\_arns) | ARNs of Secrets Manager secrets created by the module (keys: {container\_key}/{env\_name}). |
+| <a name="output_secrets_manager_json_secret_arns"></a> [secrets\_manager\_json\_secret\_arns](#output\_secrets\_manager\_json\_secret\_arns) | ARNs of shared JSON Secrets Manager secrets per container (secrets\_manager\_json). |
 | <a name="output_service_container_sg_ids"></a> [service\_container\_sg\_ids](#output\_service\_container\_sg\_ids) | service container sg ids |
 | <a name="output_target_group_arns"></a> [target\_group\_arns](#output\_target\_group\_arns) | target group arns |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.4 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.37 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.37 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_acm"></a> [acm](#module\_acm) | terraform-aws-modules/acm/aws | ~> 3.3 |
+| <a name="module_ecs_task_exec_policy"></a> [ecs\_task\_exec\_policy](#module\_ecs\_task\_exec\_policy) | terraform-aws-modules/iam/aws//modules/iam-policy | ~> 4.4 |
+| <a name="module_ecs_task_execution_role"></a> [ecs\_task\_execution\_role](#module\_ecs\_task\_execution\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.0 |
+| <a name="module_ecs_task_policy"></a> [ecs\_task\_policy](#module\_ecs\_task\_policy) | terraform-aws-modules/iam/aws//modules/iam-policy | ~> 4.4 |
+| <a name="module_ecs_task_role"></a> [ecs\_task\_role](#module\_ecs\_task\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.0 |
+| <a name="module_env_variables"></a> [env\_variables](#module\_env\_variables) | zahornyak/multiple-ssm-parameters/aws | 0.0.13 |
+| <a name="module_service_container_definition"></a> [service\_container\_definition](#module\_service\_container\_definition) | registry.terraform.io/cloudposse/ecs-container-definition/aws | ~> 0.58 |
+| <a name="module_service_container_sg"></a> [service\_container\_sg](#module\_service\_container\_sg) | registry.terraform.io/terraform-aws-modules/security-group/aws | ~> 4.3 |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_appautoscaling_policy.target_tracking_scaling_cpu_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
+| [aws_appautoscaling_policy.target_tracking_scaling_memory_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
+| [aws_appautoscaling_target.service_scaling](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
+| [aws_cloudwatch_log_group.service_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_ecs_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
+| [aws_ecs_task_definition.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
+| [aws_iam_role_policy.task_execution_role_custom](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy.task_role_custom](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy_attachment.task_execution_role_module_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.task_role_module_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_lb_listener_certificate.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
+| [aws_lb_listener_rule.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
+| [aws_lb_target_group.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
+| [aws_route53_record.lb_records](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
+| [aws_secretsmanager_secret.container_env](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret.container_json](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret_version.container_env](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_env_unlocked_value](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_json](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.container_json_unlocked_value](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_service_discovery_service.service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/service_discovery_service) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_iam_policy_document.ecs_task_exec_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.ecs_task_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_lb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb) | data source |
+| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_route53_zone.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) | data source |
+| [aws_secretsmanager_secret.json_ref_by_name](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
+| [aws_secretsmanager_secret.ref_by_name](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
+| [aws_vpc.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Assign\_public\_ip set true if you are using public subnets. | `bool` | `false` | no |
+| <a name="input_capacity_provider_strategy"></a> [capacity\_provider\_strategy](#input\_capacity\_provider\_strategy) | capacity\_provider\_strategy | `any` | `{}` | no |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the ECS Cluster. | `string` | n/a | yes |
+| <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux\_parameters, ulimits, readonly\_root\_filesystem) plus module helpers such as containerPort, ssm\_secrets, secrets\_manager\_secrets, and connect\_to\_lb. | `any` | `{}` | no |
+| <a name="input_cpu_scale_in_cooldown"></a> [cpu\_scale\_in\_cooldown](#input\_cpu\_scale\_in\_cooldown) | cpu scale\_in\_cooldown | `number` | `null` | no |
+| <a name="input_cpu_scale_out_cooldown"></a> [cpu\_scale\_out\_cooldown](#input\_cpu\_scale\_out\_cooldown) | cpu scale\_out\_cooldown | `number` | `null` | no |
+| <a name="input_cpu_scaling_target_value"></a> [cpu\_scaling\_target\_value](#input\_cpu\_scaling\_target\_value) | cpu\_scaling target\_value | `number` | `null` | no |
+| <a name="input_create_service_discovery"></a> [create\_service\_discovery](#input\_create\_service\_discovery) | creates service discovery service and connects in to ecs service | `bool` | `false` | no |
+| <a name="input_create_ssl"></a> [create\_ssl](#input\_create\_ssl) | defines if create ssl for services domains | `bool` | `true` | no |
+| <a name="input_deployment_circuit_breaker"></a> [deployment\_circuit\_breaker](#input\_deployment\_circuit\_breaker) | deployment\_circuit\_breaker configuration | `any` | `{}` | no |
+| <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | deployment\_maximum\_percent. For example 200 will create twice more container and if everything is ok, deployment is succesfull. | `number` | `200` | no |
+| <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | deployment\_minimum\_healthy\_percent. | `number` | `100` | no |
+| <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Deregistration delay for target group. | `number` | `5` | no |
+| <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired count for service. | `number` | `null` | no |
+| <a name="input_discovery_registry_id"></a> [discovery\_registry\_id](#input\_discovery\_registry\_id) | service discovery registry\_id | `string` | `null` | no |
+| <a name="input_docker_volume"></a> [docker\_volume](#input\_docker\_volume) | docker volume | `any` | `null` | no |
+| <a name="input_efs_volume"></a> [efs\_volume](#input\_efs\_volume) | Single EFS volume (deprecated, use efs\_volumes instead) | `any` | `null` | no |
+| <a name="input_efs_volumes"></a> [efs\_volumes](#input\_efs\_volumes) | Map of EFS volumes to mount. Each key is a volume name, value contains volume configuration. | `map(any)` | `{}` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name. For example 'production' | `string` | n/a | yes |
+| <a name="input_external_dns"></a> [external\_dns](#input\_external\_dns) | when you dont have route53 zone, you can use external dns | `any` | `null` | no |
+| <a name="input_external_domain"></a> [external\_domain](#input\_external\_domain) | when true, zone\_id will be null for ACM and Route53 records will not be created | `bool` | `false` | no |
+| <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Custom healthcheck for target group. | `any` | `null` | no |
+| <a name="input_health_check_grace_period_seconds"></a> [health\_check\_grace\_period\_seconds](#input\_health\_check\_grace\_period\_seconds) | health\_check\_grace\_period\_seconds | `number` | `null` | no |
+| <a name="input_launch_type"></a> [launch\_type](#input\_launch\_type) | Launch type for service: 'FARGATE', 'EC2' etc. | `string` | `"FARGATE"` | no |
+| <a name="input_lb_arn"></a> [lb\_arn](#input\_lb\_arn) | Load balancer arn. | `string` | `null` | no |
+| <a name="input_lb_dns_name"></a> [lb\_dns\_name](#input\_lb\_dns\_name) | Load balancer dns name. Use only if you dont have previously created Load Balancer | `string` | `null` | no |
+| <a name="input_lb_listener_arn"></a> [lb\_listener\_arn](#input\_lb\_listener\_arn) | Listener arn for load balancer connection | `string` | `null` | no |
+| <a name="input_lb_zone_id"></a> [lb\_zone\_id](#input\_lb\_zone\_id) | load balancer zone id | `string` | `null` | no |
+| <a name="input_max_service_tasks"></a> [max\_service\_tasks](#input\_max\_service\_tasks) | Maximum service tasks. | `number` | `null` | no |
+| <a name="input_memory_scale_in_cooldown"></a> [memory\_scale\_in\_cooldown](#input\_memory\_scale\_in\_cooldown) | memory scale\_in\_cooldown | `number` | `null` | no |
+| <a name="input_memory_scale_out_cooldown"></a> [memory\_scale\_out\_cooldown](#input\_memory\_scale\_out\_cooldown) | memory scale\_out\_cooldown | `number` | `null` | no |
+| <a name="input_memory_scaling_target_value"></a> [memory\_scaling\_target\_value](#input\_memory\_scaling\_target\_value) | memory scaling\_target\_value | `number` | `null` | no |
+| <a name="input_min_service_tasks"></a> [min\_service\_tasks](#input\_min\_service\_tasks) | Minimum service tasks. | `number` | `null` | no |
+| <a name="input_network_mode"></a> [network\_mode](#input\_network\_mode) | Network mode for task. For example 'awsvpc' or 'bridge' etc. | `string` | `"awsvpc"` | no |
+| <a name="input_ordered_placement_strategy"></a> [ordered\_placement\_strategy](#input\_ordered\_placement\_strategy) | ordered\_placement\_strategy | `any` | `{}` | no |
+| <a name="input_parameter_prefix"></a> [parameter\_prefix](#input\_parameter\_prefix) | prefix for parameter store parameter. For example '/develop/service/'. So parameter 'DEBUG' will have '/develop/service/DEBUG' name on the parameter store | `string` | `null` | no |
+| <a name="input_placement_constraints"></a> [placement\_constraints](#input\_placement\_constraints) | placement\_constraints | `any` | `{}` | no |
+| <a name="input_protocol_version"></a> [protocol\_version](#input\_protocol\_version) | target group protocol version | `string` | `null` | no |
+| <a name="input_requires_compatibilities"></a> [requires\_compatibilities](#input\_requires\_compatibilities) | Compatibilities for ECS task. Available: 'FARGATE', 'FARGATE\_SPOT', 'EC2' etc. | `list(string)` | <pre>[<br>  "FARGATE"<br>]</pre> | no |
+| <a name="input_retention_in_days"></a> [retention\_in\_days](#input\_retention\_in\_days) | retention\_in\_days | `number` | `60` | no |
+| <a name="input_route_53_zone_id"></a> [route\_53\_zone\_id](#input\_route\_53\_zone\_id) | Route 53 zone id. | `string` | `null` | no |
+| <a name="input_route_53_zone_name"></a> [route\_53\_zone\_name](#input\_route\_53\_zone\_name) | route 53 zone name. Use only when you dont have previously created Route53 zone | `string` | `null` | no |
+| <a name="input_runtime_platform"></a> [runtime\_platform](#input\_runtime\_platform) | runtime platform | `any` | `null` | no |
+| <a name="input_secret_name_prefix"></a> [secret\_name\_prefix](#input\_secret\_name\_prefix) | Prefix for Secrets Manager secrets created by the module. For example '/develop/service/'. Secret 'DEBUG' becomes '/develop/service/DEBUG'. Defaults to /{environment}/{service\_name}/{container\_name}/ per container. | `string` | `null` | no |
+| <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | additional security\_groups for service | `list(string)` | `[]` | no |
+| <a name="input_service_cpu"></a> [service\_cpu](#input\_service\_cpu) | CPU amount for the service. | `number` | n/a | yes |
+| <a name="input_service_memory"></a> [service\_memory](#input\_service\_memory) | Memory amount for the service. | `number` | n/a | yes |
+| <a name="input_service_name"></a> [service\_name](#input\_service\_name) | Name of the service. | `string` | n/a | yes |
+| <a name="input_service_subnets"></a> [service\_subnets](#input\_service\_subnets) | Subnets for service | `list(string)` | n/a | yes |
+| <a name="input_task_exec_role_policy_json"></a> [task\_exec\_role\_policy\_json](#input\_task\_exec\_role\_policy\_json) | Additional inline policies for task execution role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy\_name' = 'policy\_json'}. Policy JSON can come from data.aws\_iam\_policy\_document resources. | `map(string)` | `{}` | no |
+| <a name="input_task_role_policy_json"></a> [task\_role\_policy\_json](#input\_task\_role\_policy\_json) | Additional inline policies for task role of ECS container. Map of policy names (keys) to policy JSON documents (values). Format: {'policy\_name' = 'policy\_json'}. Policy JSON can come from data.aws\_iam\_policy\_document resources. | `map(string)` | `{}` | no |
+| <a name="input_tg_protocol"></a> [tg\_protocol](#input\_tg\_protocol) | target group protocol(for example 'HTTP' or 'TCP') | `string` | `"HTTP"` | no |
+| <a name="input_tg_target_type"></a> [tg\_target\_type](#input\_tg\_target\_type) | target group target type(ip or instance etc) | `string` | `"ip"` | no |
+| <a name="input_volumes"></a> [volumes](#input\_volumes) | Name-only task volumes (Fargate scratch / bind mounts on ephemeral storage). Mount them from a container with mount\_points. An empty set emits no volume blocks. Names must not overlap efs\_volumes or docker\_volume. | `set(string)` | `[]` | no |
+| <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | cidr block for vpc. Use that variable when you dont have previously created VPC | `string` | `null` | no |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id. | `string` | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_acm_arn"></a> [acm\_arn](#output\_acm\_arn) | acm arn |
+| <a name="output_cloudwatch_log_group_arns"></a> [cloudwatch\_log\_group\_arns](#output\_cloudwatch\_log\_group\_arns) | aws cloudwatch log group arns |
+| <a name="output_container_definitions"></a> [container\_definitions](#output\_container\_definitions) | container definitions of your task definition |
+| <a name="output_ecs_service_arn"></a> [ecs\_service\_arn](#output\_ecs\_service\_arn) | ecs\_service\_arn |
+| <a name="output_ecs_service_name"></a> [ecs\_service\_name](#output\_ecs\_service\_name) | ecs service name |
+| <a name="output_ecs_service_security_group_ids"></a> [ecs\_service\_security\_group\_ids](#output\_ecs\_service\_security\_group\_ids) | ecs service security group ids |
+| <a name="output_ecs_task_definition_arn"></a> [ecs\_task\_definition\_arn](#output\_ecs\_task\_definition\_arn) | task definition arn |
+| <a name="output_ecs_task_execution_role_arn"></a> [ecs\_task\_execution\_role\_arn](#output\_ecs\_task\_execution\_role\_arn) | ecs task execution role arn |
+| <a name="output_ecs_task_policy_arn"></a> [ecs\_task\_policy\_arn](#output\_ecs\_task\_policy\_arn) | ecs task policy arn |
+| <a name="output_ecs_task_role_arn"></a> [ecs\_task\_role\_arn](#output\_ecs\_task\_role\_arn) | ecs task role arn |
+| <a name="output_lb_listener_certificate"></a> [lb\_listener\_certificate](#output\_lb\_listener\_certificate) | lb listener certificate |
+| <a name="output_lb_listener_rule_arns"></a> [lb\_listener\_rule\_arns](#output\_lb\_listener\_rule\_arns) | load balancer listener rules arns |
+| <a name="output_records_lb_names"></a> [records\_lb\_names](#output\_records\_lb\_names) | load balancers records names |
+| <a name="output_secrets_manager_created_arns"></a> [secrets\_manager\_created\_arns](#output\_secrets\_manager\_created\_arns) | ARNs of Secrets Manager secrets created by the module (keys: {container\_key}/{env\_name}). |
+| <a name="output_secrets_manager_json_secret_arns"></a> [secrets\_manager\_json\_secret\_arns](#output\_secrets\_manager\_json\_secret\_arns) | ARNs of shared JSON Secrets Manager secrets per container (secrets\_manager\_json). |
+| <a name="output_service_container_sg_ids"></a> [service\_container\_sg\_ids](#output\_service\_container\_sg\_ids) | service container sg ids |
+| <a name="output_target_group_arns"></a> [target\_group\_arns](#output\_target\_group\_arns) | target group arns |
+<!-- END_TF_DOCS -->

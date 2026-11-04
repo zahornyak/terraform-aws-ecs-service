@@ -33,6 +33,7 @@ Do not invent inputs. If a setting is not in the README inputs table, it is not 
 | Public subnets | `assign_public_ip = true` |
 | Autoscaling | `min_service_tasks`, `max_service_tasks`, plus `cpu_scaling_target_value` and/or `memory_scaling_target_value` |
 | App secrets in SSM | Container `ssm_secrets` or `ssm_env_file` |
+| App secrets in Secrets Manager | Per-key: `secrets_manager_secrets` / `secrets_manager_env_file`; one JSON secret for many env vars: `secrets_manager_json` (+ optional `secrets_manager_json_env_file`), use `keys` for manual JSON keys with `manage_value = false` |
 | Extra IAM for the app | `task_role_policy_json` = map of name => `data.aws_iam_policy_document.*.json` |
 | Extra IAM for ECS agent | `task_exec_role_policy_json` (same map-of-JSON shape) |
 | Cloud Map | `create_service_discovery = true`, `discovery_registry_id` |

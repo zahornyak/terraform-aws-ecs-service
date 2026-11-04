@@ -16,7 +16,7 @@ variable "service_memory" {
 variable "container_definitions" {
   type        = any
   default     = {}
-  description = "Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux_parameters, ulimits, readonly_root_filesystem) plus module helpers such as containerPort, ssm_secrets, and connect_to_lb."
+  description = "Custom container definitions. Supports cloudposse/ecs-container-definition inputs (e.g. entrypoint, linux_parameters, ulimits, readonly_root_filesystem) plus module helpers such as containerPort, ssm_secrets, secrets_manager_secrets, and connect_to_lb."
 }
 
 variable "requires_compatibilities" {
@@ -253,6 +253,12 @@ variable "placement_constraints" {
 
 variable "parameter_prefix" {
   description = "prefix for parameter store parameter. For example '/develop/service/'. So parameter 'DEBUG' will have '/develop/service/DEBUG' name on the parameter store"
+  type        = string
+  default     = null
+}
+
+variable "secret_name_prefix" {
+  description = "Prefix for Secrets Manager secrets created by the module. For example '/develop/service/'. Secret 'DEBUG' becomes '/develop/service/DEBUG'. Defaults to /{environment}/{service_name}/{container_name}/ per container."
   type        = string
   default     = null
 }

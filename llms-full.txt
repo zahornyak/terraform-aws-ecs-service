@@ -24,6 +24,7 @@ ECS service (Fargate, awsvpc), task definition, container definitions, CloudWatc
 - Autoscaling: min_service_tasks and/or max_service_tasks
 - Service discovery: create_service_discovery = true + discovery_registry_id
 - SSM parameters as secrets: container ssm_secrets or ssm_env_file
+- Secrets Manager as secrets: container secrets_manager_secrets or secrets_manager_env_file
 
 ## Lookup-only vars (do not set if the resource already exists and is passed in)
 
@@ -49,6 +50,11 @@ Secrets:
 - ssm_secrets — map of NAME = { value = "..." }; module creates SSM params and injects as secrets
 - ssm_env_file — path to KEY=VALUE file; same as ssm_secrets
 - parameter_prefix (module var) — SSM path prefix; default /{environment}/{service_name}/{container_name}/
+- secrets_manager_secrets — { value } creates; { secret_arn, json_key? } references; managed = false + secret_name/secret_arn for manual secrets; manage_value = false ignores secret_string after first apply
+- secrets_manager_env_file — path to KEY=VALUE file; creates SM secrets like ssm_env_file
+- secrets_manager_json — one JSON secret per container: values (and/or keys for manual JSON keys), manage_value, managed = false + secret_name/secret_arn; ECS valueFrom arn:JSON_KEY::
+- secrets_manager_json_env_file — KEY=VALUE file merged into secrets_manager_json.values
+- secret_name_prefix (module var) — SM name prefix for created secrets; default /{environment}/{service_name}/{container_name}/; IAM prefix wildcard covers manual secrets under that path when referenced in config
 
 Other useful:
 - container_cpu, container_memory, essential, command, entrypoint, healthcheck, container_depends_on

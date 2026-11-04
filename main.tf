@@ -50,12 +50,7 @@ module "service_container_definition" {
   environment       = lookup(each.value, "environment", null)
   map_environment   = lookup(each.value, "map_environment", null)
 
-  secrets = lookup(each.value, "ssm_secrets", null) != null || lookup(each.value, "ssm_env_file", null) != null ? [
-    for k, v in module.env_variables[each.key].parameters_arns : {
-      name      = k
-      valueFrom = v
-    }
-  ] : lookup(each.value, "secrets", null)
+  secrets     = length(local.merged_container_secrets[each.key]) > 0 ? local.merged_container_secrets[each.key] : null
   map_secrets = lookup(each.value, "map_secrets", null)
 
   readonly_root_filesystem = try(each.value.readonly_root_filesystem, each.value.readonlyRootFilesystem, false)
@@ -430,11 +425,24 @@ module "ecs_task_exec_policy" {
 }
 
 data "aws_iam_policy_document" "ecs_task_exec_policy" {
-  statement {
-    actions = [
-      "ssm:GetParameters"
-    ]
-    resources = ["arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}/${var.service_name}/*"]
+  dynamic "statement" {
+    for_each = local.uses_ssm_secrets ? [1] : []
+    content {
+      actions = [
+        "ssm:GetParameters"
+      ]
+      resources = ["arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}/${var.service_name}/*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.uses_sm_secrets ? [1] : []
+    content {
+      actions = [
+        "secretsmanager:GetSecretValue"
+      ]
+      resources = distinct(concat(local.sm_iam_prefix_wildcards, local.sm_iam_ref_arns))
+    }
   }
 }
 

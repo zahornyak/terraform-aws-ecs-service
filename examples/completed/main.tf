@@ -34,6 +34,14 @@ module "ecs_service" {
         }
       ]
       ssm_env_file = "./.env"
+
+      # One JSON secret → many env vars (arn:...:KEY::):
+      # secrets_manager_json = {
+      #   values       = { DEBUG = "true" }
+      #   keys         = ["MANUAL_KEY"] # JSON keys you add in AWS later
+      #   manage_value = false
+      # }
+      # secrets_manager_json_env_file = "./.env"
     }
   }
 
