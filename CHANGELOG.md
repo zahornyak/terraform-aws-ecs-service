@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.4.0...v1.5.0) (2026-11-04)
+
+
+### Features
+
+* add support for Secrets Manager secrets in ECS module ([018a7bc](https://github.com/zahornyak/terraform-aws-ecs-service/commit/018a7bca3608f7a4cc52544c232ebfb98fc1d23e))
+
 ## [1.4.0](https://github.com/zahornyak/terraform-aws-ecs-service/compare/v1.3.0...v1.4.0) (2026-09-09)
 
 
