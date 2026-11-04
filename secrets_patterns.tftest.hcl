@@ -49,68 +49,36 @@ run "secrets_patterns_plan" {
   override_data {
     target = module.ecs.data.aws_iam_policy_document.ecs_task_exec_policy
     values = {
-      json = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-          {
-            Effect   = "Allow"
-            Action   = ["ssm:GetParameters", "secretsmanager:GetSecretValue"]
-            Resource = "*"
-          },
-        ]
-      })
+      json = <<-JSON
+      {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetParameters","secretsmanager:GetSecretValue"],"Resource":"*"}]}
+      JSON
     }
   }
 
   override_data {
     target = module.ecs.data.aws_iam_policy_document.ecs_task_policy
     values = {
-      json = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-          {
-            Effect   = "Allow"
-            Action   = ["ssmmessages:CreateControlChannel"]
-            Resource = "*"
-          },
-        ]
-      })
+      json = <<-JSON
+      {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssmmessages:CreateControlChannel"],"Resource":"*"}]}
+      JSON
     }
   }
 
   override_data {
     target = module.ecs.module.ecs_task_execution_role.data.aws_iam_policy_document.this[0]
     values = {
-      json = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-          {
-            Effect = "Allow"
-            Principal = {
-              Service = "ecs-tasks.amazonaws.com"
-            }
-            Action = "sts:AssumeRole"
-          },
-        ]
-      })
+      json = <<-JSON
+      {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+      JSON
     }
   }
 
   override_data {
     target = module.ecs.module.ecs_task_role.data.aws_iam_policy_document.this[0]
     values = {
-      json = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-          {
-            Effect = "Allow"
-            Principal = {
-              Service = "ecs-tasks.amazonaws.com"
-            }
-            Action = "sts:AssumeRole"
-          },
-        ]
-      })
+      json = <<-JSON
+      {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+      JSON
     }
   }
 
